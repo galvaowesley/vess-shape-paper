@@ -1,0 +1,177 @@
+\documentclass[%
+reprint,
+%superscriptaddress,
+%groupedaddress,
+%unsortedaddress,
+%runinaddress,
+%frontmatterverbose, 
+%preprint,
+%preprintnumbers,
+nofootinbib,
+%nobibnotes,
+%bibnotes,
+ amsmath,amssymb,
+aps,
+%pra,
+%prb,
+%rmp,
+%prstab,
+%prstper,
+%floatfix,
+superscriptaddress,
+showkeys,
+%endfloats,
+%onecolumn,
+longbibliography
+]{revtex4-1}
+
+%TESTE
+\usepackage{enumitem}
+
+\usepackage{xr}
+\usepackage{tabularx}
+\usepackage{graphicx}% Include figure files
+\usepackage{dcolumn}% Align table columns on decimal point
+\usepackage{bm}% bold math
+\usepackage{microtype}
+\usepackage{gensymb}
+\usepackage{url}
+\usepackage[breaklinks, hidelinks, colorlinks=true,linkcolor=blue,citecolor=black]{hyperref}% add hypertext capabilities
+\usepackage{color, colortbl}
+\usepackage[table,xcdraw]{xcolor}
+%\usepackage[mathlines]{lineno}% Enable numbering of text and display math
+%\linenumbers\relax % Commence numbering lines
+
+%\usepackage[showframe,%Uncomment any one of the following lines to test 
+%%scale=0.7, marginratio={1:1, 2:3}, ignoreall,% default settings
+%%text={7in,10in},centering,
+%%margin=1.5in,
+%%total={6.5in,8.75in}, top=1.2in, left=0.9in, includefoot,
+%%height=10in,a5paper,hmargin={3cm,0.8in},
+%]{geometry}
+
+%VER
+\usepackage[table]{xcolor}
+
+\makeatletter
+\renewcommand\frontmatter@abstractwidth{\dimexpr0.9\textwidth\relax}
+\makeatother
+
+
+% \bibliographystyle{apsrev4-1}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\makeatletter
+\newcommand*{\addFileDependency}[1]{% argument=file name and extension
+  \typeout{(#1)}
+  \@addtofilelist{#1}
+  \IfFileExists{#1}{}{\typeout{No file #1.}}
+}
+\makeatother
+
+\newcommand*{\myexternaldocument}[1]{%
+    \externaldocument{#1}%
+    \addFileDependency{#1.tex}%
+    \addFileDependency{#1.aux}%
+}
+
+\newcommand{\sm}{\scalebox{0.5}[1.0]{\( - \)}}
+
+
+%VER
+\makeatletter
+\renewcommand\subparagraph{\@startsection{subparagraph}{5}{\parindent}%
+    {3.25ex \@plus1ex \@minus .2ex}%
+    {-1em}%
+    {\normalfont\normalsize\bfseries}}
+\makeatother
+
+\begin{document}
+
+\preprint{1}
+
+
+
+\title{VessShape: Few-shot blood vessel segmentation by leveraging shape priors from synthetic images}
+%VessShape: Few-shot blood vessel segmentation using shape priors from synthetic data
+%VessShape: Adding shape priors to neural networks for few-shot blood vessel segmentation
+
+\author{Wesley Nogueira Galvão}
+\affiliation{Department of Computer Science, Federal University of S\~ao Carlos, S\~ao Carlos, SP, Brazil}
+
+
+\author{Cesar H. Comin}
+\email[Corresponding author: ]{comin@ufscar.br}
+\affiliation{Department of Computer Science, Federal University of S\~ao Carlos, S\~ao Carlos, SP, Brazil}
+
+\date{\today}% It is always \today, today,
+             %  but any date may be explicitly specified
+
+\begin{abstract}
+
+??
+
+\end{abstract}
+
+\keywords{Blood vessel segmentation, Connectivity, post-processing}
+
+\maketitle
+\thispagestyle{plain}
+%\ohead*{\pagemark}
+
+\section{Introduction}
+\label{sec:introduction}
+
+
+
+\section{Related Works}
+\label{sec:related}
+
+- Pre-training with synthetic data
+
+- Synthetic data in medical images
+
+- Shape priors for medical images segmentation using neural networks
+
+- Shape priors for vessel segmentation (classic methods)
+
+- Shape priors for vessel segmentation (neural networks)
+
+\section{Methodology}
+\label{s:methodology}
+
+\subsection{VessShape}
+
+\subsection{Training details}
+
+\subsection{Fine-tuning}
+
+- Datasets (VessMAP e DRIVE)
+
+- Procedure
+
+\section{Results}
+\label{s:results}
+
+\begin{figure}[tbp]
+    \centering
+    \includegraphics[width=\columnwidth]{imgs/figure.pdf}
+    \caption{??.}
+    \label{f:}
+\end{figure}
+
+
+\section{Conclusion}
+\label{s:conclusion}
+
+
+
+
+\section*{Funding}
+C. H. Comin thanks FAPESP (grant no. 21/12354-8) for financial support. 
+
+
+\bibliography{references}
+
+\end{document}
