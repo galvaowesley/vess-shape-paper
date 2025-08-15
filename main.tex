@@ -143,6 +143,23 @@ longbibliography
 
 \subsection{VessShape}
 
+\begin{table*}[t]
+\caption{VessShape generation parameters, sampling ranges, and description.}
+\label{tab:vessshape_params}
+\centering
+\begin{tabularx}{\textwidth}{l c X}
+\hline
+    \textbf{Parameter} & \textbf{Range} & \textbf{Description} \\
+\hline
+Number of curves $K$ & $[1,20]$ & Number of branches/vessels generated per sample. \\
+Control points $n{+}1$ & $[2,20]$ & Bézier curve complexity (order $n$). \\
+Displacement scale $\delta$ (px) & $[50.0,150.0]$ & Controls curvature/tortuosity via the typical amplitude of control-point displacement. \\
+Initial radius $r_{0,k}$ (px) & $[1,5]$ & Basal vessel thickness; a smooth taper is applied along the branch. \\
+Matting blur $\sigma$ & $[1,2]$ & Standard deviation of the Gaussian used for $A = G_{\sigma} * M$. \\
+\hline
+\end{tabularx}
+\end{table*}
+
 \subsection{Training details}
 
 \subsection{Fine-tuning}
@@ -154,12 +171,12 @@ longbibliography
 \section{Results}
 \label{s:results}
 
-\begin{figure}[tbp]
-    \centering
-    \includegraphics[width=\columnwidth]{imgs/figure.pdf}
-    \caption{??.}
-    \label{f:}
-\end{figure}
+% \begin{figure}[tbp]
+%     \centering
+%     \includegraphics[width=\columnwidth]{imgs/figure.pdf}
+%     \caption{??.}
+%     \label{f:}
+% \end{figure}
 
 
 \section{Conclusion}
