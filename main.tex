@@ -143,6 +143,15 @@ longbibliography
 
 \subsection{VessShape}
 
+VessShape is a synthetic image dataset that combines tubular, vessel-like shapes with diverse foreground and background textures. The central idea is to provide a robust set that can be used to train blood vessel segmentation models while keeping geometric priors fixed and drastically changing texture, encouraging models to learn shape cues (connectivity, tapering, bifurcations) rather than overfitting to texture.
+
+The geometry of this dataset is based on Bézier curves, which allow a flexible and controlled representation of tubular shapes. Each vascular branch $C_k$ is described by an $n$-th order Bézier curve with control points $\{\mathbf{P}_{k,i}\}_{i=0}^n$, sampled to produce connected branches and plausible bifurcation angles. Tortuosity is adjusted by small perturbations to the control points, ensuring that vessel geometry is realistic and diverse.
+
+\begin{equation}
+\mathbf{c}_k(t) \,=\, \sum_{i=0}^{n} \binom{n}{i} (1-t)^{n-i} t^{i} \, \mathbf{P}_{k,i}, \qquad t \in [0,1].
+\label{eq:bezier}
+\end{equation}
+
 \begin{table*}[t]
 \caption{VessShape generation parameters, sampling ranges, and description.}
 \label{tab:vessshape_params}
@@ -156,9 +165,6 @@ Control points $n{+}1$ & $[2,20]$ & Bézier curve complexity (order $n$). \\
 Displacement scale $\delta$ (px) & $[50.0,150.0]$ & Controls curvature/tortuosity via the typical amplitude of control-point displacement. \\
 Initial radius $r_{0,k}$ (px) & $[1,5]$ & Basal vessel thickness; a smooth taper is applied along the branch. \\
 Matting blur $\sigma$ & $[1,2]$ & Standard deviation of the Gaussian used for $A = G_{\sigma} * M$. \\
-\hline
-\end{tabularx}
-\end{table*}
 
 \subsection{Training details}
 
