@@ -1,0 +1,202 @@
+\documentclass[%
+reprint,
+%superscriptaddress,
+%groupedaddress,
+%unsortedaddress,
+%runinaddress,
+%frontmatterverbose, 
+%preprint,
+%preprintnumbers,
+nofootinbib,
+%nobibnotes,
+%bibnotes,
+ amsmath,amssymb,
+aps,
+%pra,
+%prb,
+%rmp,
+%prstab,
+%prstper,
+%floatfix,
+superscriptaddress,
+showkeys,
+%endfloats,
+%onecolumn,
+longbibliography
+]{revtex4-1}
+
+%TESTE
+\usepackage{enumitem}
+
+\usepackage{xr}
+\usepackage{tabularx}
+\usepackage{graphicx}% Include figure files
+\usepackage{dcolumn}% Align table columns on decimal point
+\usepackage{bm}% bold math
+\usepackage{microtype}
+\usepackage{gensymb}
+\usepackage{url}
+\usepackage[breaklinks, hidelinks, colorlinks=true,linkcolor=blue,citecolor=black]{hyperref}% add hypertext capabilities
+\usepackage{color, colortbl}
+\usepackage[table,xcdraw]{xcolor}
+%\usepackage[mathlines]{lineno}% Enable numbering of text and display math
+%\linenumbers\relax % Commence numbering lines
+
+%\usepackage[showframe,%Uncomment any one of the following lines to test 
+%%scale=0.7, marginratio={1:1, 2:3}, ignoreall,% default settings
+%%text={7in,10in},centering,
+%%margin=1.5in,
+%%total={6.5in,8.75in}, top=1.2in, left=0.9in, includefoot,
+%%height=10in,a5paper,hmargin={3cm,0.8in},
+%]{geometry}
+
+%VER
+\usepackage[table]{xcolor}
+
+\makeatletter
+\renewcommand\frontmatter@abstractwidth{\dimexpr0.9\textwidth\relax}
+\makeatother
+
+
+\bibliographystyle{apsrev4-1}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\makeatletter
+\newcommand*{\addFileDependency}[1]{% argument=file name and extension
+  \typeout{(#1)}
+  \@addtofilelist{#1}
+  \IfFileExists{#1}{}{\typeout{No file #1.}}
+}
+\makeatother
+
+\newcommand*{\myexternaldocument}[1]{%
+    \externaldocument{#1}%
+    \addFileDependency{#1.tex}%
+    \addFileDependency{#1.aux}%
+}
+
+\newcommand{\sm}{\scalebox{0.5}[1.0]{\( - \)}}
+
+
+%VER
+\makeatletter
+\renewcommand\subparagraph{\@startsection{subparagraph}{5}{\parindent}%
+    {3.25ex \@plus1ex \@minus .2ex}%
+    {-1em}%
+    {\normalfont\normalsize\bfseries}}
+\makeatother
+
+\begin{document}
+
+\preprint{Draft}
+
+\title{VessShape: Rascunho de metodologia e descrição do dataset}
+
+\author{Wesley Nogueira Galv\~ao}
+\affiliation{Department of Computer Science, Federal University of S\~ao Carlos, S\~ao Carlos, SP, Brazil}
+
+\author{Cesar H. Comin}
+\email[Corresponding author: ]{comin@ufscar.br}
+\affiliation{Department of Computer Science, Federal University of S\~ao Carlos, S\~ao Carlos, SP, Brazil}
+
+\date{\today}
+
+\begin{abstract}
+Este documento reúne rascunhos de texto e fórmulas para a subseção metodológica do dataset VessShape, mantendo o mesmo template do artigo principal.
+\end{abstract}
+
+\maketitle
+\thispagestyle{plain}
+
+\section{Metodologia}
+\label{s:methodology}
+
+\subsection{VessShape \textemdash{} Composição sintética com viés de forma}
+\label{ss:vessshape}
+
+O VessShape é um conjunto sintético que combina formas tubulares semelhantes a vasos sanguíneos com texturas variadas de primeiro plano e de fundo. A ideia central é manter a geometria estável enquanto se muda drasticamente a textura, forçando modelos a aprenderem pistas de \emph{forma} (conectividade, afilamento, bifurcações) em vez de dependerem de textura.
+
+\paragraph*{Geometria por curvas Bézier.}
+Cada ramo vascular $C_k$ é descrito por uma curva de Bézier de ordem $n$ com pontos de controle $\{\mathbf{P}_{k,i}\}_{i=0}^n$:
+\begin{equation}
+\mathbf{c}_k(t) \,=\, \sum_{i=0}^{n} \binom{n}{i} (1-t)^{n-i} t^{i} \, \mathbf{P}_{k,i}, \qquad t \in [0,1].
+\label{eq:bezier}
+\end{equation}
+Os pontos de controle são amostrados de forma a produzir ramos conectados (compartilhando extremos) e ângulos de bifurcação plausíveis; a tortuosidade é ajustada por pequenas perturbações nos pontos de controle. Usamos faixas simples e reprodutíveis: número de curvas $K$ amostrado em $[1,20]$; número de pontos de controle por curva em $[2,20]$ (controla a complexidade da Bézier); e uma escala de deslocamento típica dos pontos de controle em pixels $\delta \in [50.0, 150.0]$, que regula a curvatura/tortuosidade.
+
+Na rasterização, adotamos espessura constante $r_0$ por ramo (coerente com o uso de \texttt{binary\_dilation} no código). Em termos contínuos, a máscara pode ser descrita como
+\begin{equation}
+M(x) \,=\, \mathbb{1}\!\left(\, \min_k\; \inf_{t\in[0,1]} \big\| x - \mathbf{c}_k(t) \big\| \;\le\; r_0 \right), \quad x\in\Omega,
+\label{eq:mask}
+\end{equation}
+e, no domínio discreto, corresponde a desenhar a polilinha de $\mathbf{c}_k$ (\texttt{skimage.draw.line}) seguida de \texttt{binary\_dilation(img, iterations=radius)}. Um fechamento morfológico opcional remove pequenas lacunas.
+
+\paragraph*{Composição de texturas.}
+Para cada amostra selecionamos uma textura de primeiro plano $F$ (aplicada nas regiões dos vasos) e uma de fundo $B$ (categorias distintas, e.g., do ImageNet). Antes da composição, executamos um \emph{crop} aleatório em cada textura para o tamanho-alvo $H\times W$ (ex.: $256\times256$), garantindo dimensões consistentes com a máscara $M$. A transição é suavizada por um \emph{alpha matte} $A$ obtido ao desfocar $M$ com \texttt{gaussian\_filter} e normalizar $A$ para $[0,1]$ (dividindo pelo máximo). A imagem final é dada por
+\begin{equation}
+I(x) \,=\, A(x)\,F(x) + (1-A(x))\,B(x), \qquad x \in \Omega.
+\label{eq:compose}
+\end{equation}
+Usamos um desfoque Gaussiano com desvio-padrão $\sigma$ ($A = G_{\sigma} * M$). Para integração no treinamento supervisionado, normalizamos $I$ por canal usando estatísticas típicas do ImageNet (médias e desvios por canal), mantendo compatibilidade com práticas comuns em redes de visão. Para consistência, quaisquer transformações geométricas (rotação, escala, estiramento suave) são aplicadas de forma idêntica à imagem $I$ e à máscara $M$.
+
+\paragraph*{Parâmetros e amostragem aleatória.}
+Trabalhamos com imagens quadradas de tamanho $256\times256$. Em cada amostra:
+
+
+\begin{table*}[t]
+\caption{Parâmetros de geração do VessShape, faixas de amostragem e descrição.}
+\label{tab:vessshape_params}
+\centering
+\begin{tabularx}{\textwidth}{l c X}
+\hline
+	\textbf{Parâmetro} & \textbf{Faixa} & \textbf{Descrição} \\
+\hline
+
+Número de curvas $K$ & $[1,20]$ & Quantidade de ramos/vasos gerados por amostra. \\
+Pontos de controle $n{+}1$ & $[2,20]$ & Complexidade da curva de Bézier (ordem $n$). \\
+Escala de deslocamento $\delta$ (px) & $[50.0,150.0]$ & Controla curvatura/tortuosidade via amplitude típica do deslocamento dos pontos de controle. \\
+Raio $r_0$ (px) & $[1,5]$ & Espessura constante dos vasos, obtida por dilatação morfológica da polilinha rasterizada. \\
+Desfoque do matting $\sigma$ & $[1,2]$ & Desvio-padrão do Gaussiano usado para $A = G_{\sigma} * M$. \\
+\hline
+\end{tabularx}
+\end{table*}
+
+\paragraph*{Relação com o código (nomes das variáveis).}
+Para rastreabilidade entre a descrição acima e a implementação:
+\begin{itemize}[leftmargin=*]
+  \item $K$ \,$\leftrightarrow$\, \texttt{num\_curves}
+  \item $n{+}1$ (total de pontos de controle) \,$\leftrightarrow$\, \texttt{n\_control\_points} (grau $n = (n{+}1)-1$)
+  \item $\delta$ \,$\leftrightarrow$\, \texttt{max\_vd} (escala de deslocamento dos pontos de controle)
+  \item $r_0$ \,$\leftrightarrow$\, \texttt{radius} (iterações da \texttt{binary\_dilation})
+  \item $\sigma$ \,$\leftrightarrow$\, \texttt{sigma} (desfoque Gaussiano do \emph{alpha} $A$)
+  \item $H{\times}W$ \,$\leftrightarrow$\, \texttt{image\_size} (após \emph{random crop})
+  \item margem \,$\leftrightarrow$\, \texttt{extra\_space} (amostragem geométrica antes do \emph{crop})
+  \item precisão da curva \,$\leftrightarrow$\, \texttt{precision} (pontos por curva para rasterização)
+  \item restrição de extremos \,$\leftrightarrow$\, \texttt{min\_dist}/\texttt{max\_dist} (distância mínima/máxima entre extremos)
+\end{itemize}
+
+\paragraph*{Saídas e propósito.}
+Cada amostra produz o par $(I, M)$: imagem composta e sua máscara de segmentação correspondente. Ao trocar amplamente as texturas de $F$ e $B$ e manter a geometria induzida por $M$, seguimos o princípio de \cite{geirhos2018} para estimular um viés de forma benéfico ao treinamento de segmentadores de vasos.
+
+\begin{algorithm}[t]
+\caption{Geração de uma amostra VessShape (visão geral)}
+\begin{algorithmic}[1]
+\State Amostrar $K$, $n{+}1$, $\delta$, $r_0$, $\sigma$ e demais hiperparâmetros
+\For{$k \gets 1$ \To $K$}
+  \State Amostrar $\{\mathbf{P}_{k,i}\}$ e construir $\mathbf{c}_k$ (curva de Bézier)
+  \State Rasterizar polilinha de $\mathbf{c}_k$ e dilatar com raio $r_0$ (obtendo contribuição em $M$)
+\EndFor
+\State Selecionar texturas $F$ e $B$; aplicar \emph{random crop} para $H\times W$
+\State $A \gets \mathrm{normalize}(\,G_{\sigma} * M\,)$
+\State $I \gets A \odot F + (1-A) \odot B$ \hfill (Eq.~\ref{eq:compose})
+\State Aplicar aumentos coerentes em $I$ e $M$; retornar $(I, M)$
+\end{algorithmic}
+\end{algorithm}
+
+\section*{Agradecimentos}
+C. H. Comin agradece à FAPESP (processo 21/12354-8) pelo apoio financeiro.
+
+\bibliography{references}
+
+\end{document}
