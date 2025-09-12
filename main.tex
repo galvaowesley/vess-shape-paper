@@ -189,6 +189,15 @@ I(x) \,=\, A(x)\,F(x) + (1-A(x))\,B(x), \qquad x \in \Omega.
 
 \subsection{Training details}
 
+A crucial step is the choice of architecture. We adopt an encoder–decoder arrangement, in which the encoder (\emph{backbone}) extracts visual representations and the decoder performs the segmentation. In the encoder, the architectures actually evaluated were ResNet18 and ResNet50 \cite{}. The decoder follows the U-Net design \cite{}, widely used in medical segmentation.
+
+We design three complementary stages with distinct goals: (i) pretraining on VessShape to inject a \emph{shape} bias and reduce dependence on texture, (ii) \emph{from scratch} training on natural datasets (VessMAP, DRIVE) to establish a baseline, and (iii) \emph{few-shot} fine-tuning to measure the transferability and sample efficiency of the learned representations.
+
+\subsection{Pre-training on VessShape}
+
+
+
+
 \subsection{Fine-tuning}
 
 - Datasets (VessMAP e DRIVE)
