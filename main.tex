@@ -94,7 +94,7 @@ longbibliography
 
 
 
-\title{VessShape: Few-shot blood vessel segmentation by leveraging shape priors from synthetic images}
+\title{VessShape: Few-shot 2D blood vessel segmentation by leveraging shape priors from synthetic images}
 %VessShape: Few-shot blood vessel segmentation using shape priors from synthetic data
 %VessShape: Adding shape priors to neural networks for few-shot blood vessel segmentation
 
@@ -129,13 +129,13 @@ longbibliography
 \section{Related Works}
 \label{sec:related}
 
-- Pre-training with synthetic data
-
-- Synthetic data in medical images
-
 - Shape priors for medical images segmentation using neural networks
 
 - Shape priors for vessel segmentation (classic methods)
+hessian, Frangi filter
+
+- Pre-training with synthetic data
+deepvesselnet, VesselFM (específicos para determinadas modalidades de imagem (fotografia de fundo, microscopia, ressonância, etc])
 
 - Shape priors for vessel segmentation (neural networks)
 
@@ -219,6 +219,10 @@ We design three complementary stages with distinct goals: (i) pretraining on Ves
     \label{f:results_charts}
 \end{figure*}
 
+%TODO
+%Nomeclatura:
+%- VSUnet: modelo pré-treinado no VessShape e/ou refinado em outros datasets
+%- Unet: modelo treinado do zero
 
 \begin{table*}[t]
 \caption{Zero-shot segmentation results.}
@@ -242,10 +246,14 @@ DRIVE & ResNet50 - From Scratch & 0.888 & 0.230 & 0.728 & 0.275 & 0.367 & 0.762 
 \endgroup
 \end{table*}
 
+% TODO:
+% Adicionar a comparação de segmentação do VessMap e DRIVE para 0-shot, 1-shot e max-shot
+% Argumentar que o nosso modelo é capaz de segmentar em zero-shot a forma do vaso, mesmo para VessMap que tem vasos com intensidade mais alta (branco), e DRIVE, com vasos com intensidade mais baixa(preto). 
+
 
 \section{Conclusion}
 \label{s:conclusion}
-
+% Trabalhos futuros: testar o modelo em imagens 3D
 
 
 
