@@ -127,39 +127,47 @@ longbibliography
 \section{Introduction}
 \label{sec:introduction}
 
+VessShape is a synthetic image dataset that combines tubular, vessel-like shapes with diverse foreground and background textures. The central idea is to provide a robust set that can be used to pre-train blood vessel segmentation models by keeping geometric priors fixed and drastically changing the texture, encouraging models to learn shape cues (connectivity, tapering, bifurcations) rather than learning the texture.
 
 
 \section{Related Works}
 \label{sec:related}
 
-- Shape priors for medical images segmentation using neural networks
+Many previous works have considered shape priors for medical image segmentation [??]. This is possible when organelles, cells, or organs have a known shape, and the segmentation process can assume an optimal shape or additional optimization criteria such as the requirement of smooth borders. Instance segmentation is probably the most common task where shape priors have been explored. A particular challenge with blood vessel identification is that it usually requires a semantic segmentation of the image. 
 
-- Shape priors for vessel segmentation (classic methods)
-hessian, Frangi filter
+Before the popularity of deep learning methods, local shape priors were the dominant approach for vessel segmentation. Blood vessels tend to have a tubular structure. Thus, the usual approach was to develop filters aimed at identifying tubular objects. A popular line of research was based on the eigenvalues of the Hessian matrix [??]. Arguably, the most popular Hessian-based method is the Frangi filter [??], which consists of combining the eigenvalues to define a tubularity score for vessel pixels. Another popular line of research was based on the definition of line or Gabor filter templates for identifying relevant vessel structures. One important drawback of these methods is that the tubularity assumption is not valid at bifurcation and termination points.
 
-- Pre-training with synthetic data
-deepvesselnet, VesselFM (específicos para determinadas modalidades de imagem (fotografia de fundo, microscopia, ressonância, etc])
+With the emergence of deep learning, few works have explored shape priors for vessel segmentation. This is probably due to the challenging task of including such priors during network training. ??. For neural networks, it is simpler, and likely more flexible, to consider a data-based approach for adding shape priors to the model. To our knowledge, no previous work tried to use the same method considered in our work. The closest approach is to generate synthetic images that are as similar as possible to the samples in the dataset. This has been done using two main strategies: i) using an appearance model of the vessels and image background [??] and ii) using style transfer or a generative model for creating the samples [??]. 
 
-- Shape priors for vessel segmentation (neural networks)
+??
+
+The main drawback of the aforementioned works is that the network is trained to identify both the shape and texture of the blood vessels in the samples. Changes in the texture of the vessels due to diseases or modifications of the capture device may lead to low segmentation performance. In addition, different models have to be trained for distinct imaging modalities, where annotated data can be scarce. Our approach aims at training neural networks to segment any vascular tissue that follows the shape priors acquired from VessShape.
+
+%deepvesselnet, VesselFM (específicos para determinadas modalidades de imagem (fotografia de fundo, microscopia, ressonância, etc])
+
+
 
 \section{Methodology}
 \label{s:methodology}
 
-\subsection{VessShape Dataset}
+\subsection{The VessShape Dataset}
 
-VessShape is a synthetic image dataset that combines tubular, vessel-like shapes with diverse foreground and background textures. The central idea is to provide a robust set that can be used to train blood vessel segmentation models while keeping geometric priors fixed and drastically changing texture, encouraging models to learn shape cues (connectivity, tapering, bifurcations) rather than overfitting to texture.
-
-The geometry of this dataset is based on Bézier curves, which allow a flexible and controlled representation of tubular shapes. Each vascular branch $C_k$ is described by an $n$-th order Bézier curve with control points $\{\mathbf{P}_{k,i}\}_{i=0}^n$, sampled to produce connected branches and plausible bifurcation angles. Tortuosity is adjusted by small perturbations to the control points, ensuring that vessel geometry is realistic and diverse. The Equation \ref{eq:bezier} defines the Bézier curve $\mathbf{c}_k(t)$ for each branch $k$, where $t$ varies from 0 to 1.
+The geometry of the synthetic images is based on Bézier curves, which allow a flexible and controlled representation of tubular shapes. Each vascular segment is described by an $n$th order Bézier curve with control points $\{\mathbf{p}_i\}_{i=0}^n$. The tortuosity of the segments is adjusted by small perturbations to the control points, ensuring that vessel geometry is realistic and diverse. The Bézier curve $\mathbf{c}(t)$ of a vessel segment is given by
 
 \begin{equation}
-\mathbf{c}_k(t) \,=\, \sum_{i=0}^{n} \binom{n}{i} (1-t)^{n-i} t^{i} \, \mathbf{P}_{k,i}, \qquad t \in [0,1].
+\mathbf{c}(t) \,=\, \sum_{i=0}^{n} \binom{n}{i} (1-t)^{n-i} t^{i} \, p_i,
 \label{eq:bezier}
 \end{equation}
+where $t$ varies from 0 to 1. 
 
-To generate connected vascular trees, control points are sampled so that branches share endpoints in order to form plausible bifurcation angles. Tortuosity is induced by random perturbations to the control points, with amplitude regulated by the displacement scale $\delta$. The number of branches $K$ and the order $n+1$ of the Bézier curves are also randomly sampled to ensure a wide variety of shapes, and the radius $r_0$ sets the basal thickness of the vessels during the rasterization process. Table \ref{tab:vessshape_params} summarizes the parameters used in the VessShape dataset generation, along with their sampling ranges and descriptions.
+To generate a curve, the first ($\mathbf{p}_0$) and last ($\mathbf{p}_n$) control points are randomly drawn with uniform probability. The remaining control points are generated by defining $n-2$ equally spaced points between a line connecting $\mathbf{p}_0$ and $\mathbf{p}_1$. Each of these points is then displaced by a random amount along a normal vector $\mathbf{n}_l$. This normal vector is a unit vector perpendicular to the line between $\mathbf{p}_0$ and $\mathbf{p}_1$. The displacement amount is drawn from a uniform distribution in $[-\delta,\delta]$. Lower values of $\delta$ lead to more straight curves.
+
+For the generation of the binary mask $M$, each curve is discretized by sampling points at a sufficient resolution to capture its curvature, which are then sequentially connected to form a 1-pixel-thick polyline on the image grid. Subsequently, a binary morphological dilation with a disk-shaped structuring element of radius $r_0$ is applied, assigning a constant tubular thickness to the segments. 
+
+To generate each binary mask, the number of segments $K$, the order $n$ of the Bézier curves, the displacement scale $\delta$ and the radius $r_0$ are all randomly sampled from an interval to ensure a wide variety of shapes. Table \ref{tab:vessshape_params} summarizes the parameters used in the VessShape dataset generation, along with their sampling ranges and descriptions.
 
 \begin{table*}[t]
-\caption{VessShape generation parameters, sampling ranges, and description.}
+\caption{Main parameters used for generating the VessShape dataset.}
 \label{tab:vessshape_params}
 \centering
 \begin{tabularx}{\textwidth}{l c X}
@@ -176,30 +184,35 @@ Matting blur $\sigma$ & $[1,2]$ & Standard deviation of the Gaussian used for $A
 \end{tabularx}
 \end{table*}
 
-
-The generation of the binary mask $M$ from the curves $\mathbf{c}_k(t)$ is a multi-step process. Initially, each curve is discretized by sampling points at a sufficient resolution to capture its curvature, which are then sequentially connected to form a 1-pixel-thick polyline on the image grid. Subsequently, a binary morphological dilation with a disk-shaped structuring element is applied iteratively until the structure reaches a radius of $r_0$, consequently assigning a constant tubular thickness to the branches. Optionally, a morphological closing operation can be employed to seal small gaps at bifurcations or sharp angles.
-
-To compose the final image $I$ from a binary mask $M$, a foreground texture $F$ and a background texture $B$ are selected from distinct categories, randomly cropped, and resized to the target dimensions ($H \times W$). An alpha matte $A$ is then generated by smoothing $M$ with a Gaussian filter of standard deviation $\sigma$ and normalizing its values to the $[0, 1]$ range. The textures are subsequently blended using this matte according to Eq.~\ref{eq:compose}, which ensures that vessel regions ($A \approx 1$) preserve the foreground while non-vessel regions ($A \approx 0$) retain the background. The parameter $\sigma$ directly controls the smoothness of this transition at the vessel boundaries. After composition, the image $I$ undergoes channel-wise normalization using ImageNet statistics for compatibility with pre-trained models. Finally, to ensure spatial consistency, any geometric augmentations are applied identically to both the image $I$ and its corresponding mask $M$. A sample of the generated images and masks is shown in Figure \ref{f:vessshape_sample}.
+To compose the final image $I$ from a binary mask $M$, a foreground texture $F$ and a background texture $B$ are inserted into, respectively, the generated vessel segments and the background of the image. The textures are randomly selected from ImageNet [??]. Specifically, for each mask $M$, two images are randomly drawn from two distinct classes of the ImageNet dataset. The images are then randomly cropped and resized to the target dimensions ($H \times W$). An alpha matte $A$ is then generated by smoothing $M$ with a Gaussian filter of standard deviation $\sigma$ and normalizing its values to the $[0, 1]$ range. The textures are subsequently blended using this matte according to 
 
 \begin{equation}
-I(x) \,=\, A(x)\,F(x) + (1-A(x))\,B(x), \qquad x \in \Omega.
+I \,=\, A\,F + (1-A)\,B,
 \label{eq:compose}
 \end{equation}
+which ensures that vessel regions ($A \approx 1$) preserve the foreground while non-vessel regions ($A \approx 0$) retain the background. 
+
+Parameter $\sigma$ controls the smoothness of the vessel boundaries. After composition, the image $I$ undergoes channel-wise normalization using the ImageNet statistics for compatibility with pre-trained models. Examples of generated masks and images are shown in Figure~\ref{f:vessshape_sample}.
 
 
 \begin{figure}[tbp]
     \centering
     \includegraphics[width=\columnwidth]{figures/results/vessshape_sample.pdf}
-    \caption{??.}
+    \caption{Examples of ImageNet samples, synthetic geometry and respective VessShape images. The ImageNet samples are used as textures for the synthetic binary masks, defining the respective VessShape image.}
     \label{f:vessshape_sample}
 \end{figure}
 
+\subsection{Real-world data for validation}
 
-\subsection{Training details}
+To quantify the usefulness of the shape bias introduced by the VessShape dataset, we consider two blood vessel datasets: DRIVE and VessMAP. The DRIVE dataset~\cite{} serves as a popular standard for benchmarking retinal vessel segmentation algorithms and is composed of 40 fundus photographs split into 20 for training and 20 for testing, each measuring 584×565 pixels. The VessMAP dataset consists of 100 images, 256×256 pixels each, acquired via fluorescence microscopy of the mouse cortex. It was curated to include a variety of challenging vascular features, such as inconsistent noise and contrast levels, different vessel sizes, prominent imaging artifacts, and intensity fluctuations within vessel structures.
 
-A crucial step is the choice of architecture. We adopt an encoder–decoder arrangement, in which the encoder extracts visual representations and the decoder performs the segmentation. In the encoder, the architectures actually evaluated were ResNet18 and ResNet50 \cite{}. The decoder follows the U-Net design \cite{}, widely used in medical segmentation.
+The two datasets originate from fundamentally different imaging modalities, resulting in distinct characteristics. The fundus images in DRIVE, which capture the entire retina, possess a clear global structure that includes landmarks like the optic disk. The samples also contain many very thin vessels which are challenging to segment. In contrast, the VessMAP images are highly magnified views of small cortical areas and have no discernible global organization. The borders of the vessels are generally less defined than the vessels from DRIVE. Another key difference is that, without any processing, the vessels in VessMAP are bright with dark backgrounds while the vessels in DRIVE are dark with bright backgrounds. Figure~\ref{} shows one sample from each dataset.
 
-We design three complementary stages with distinct goals: (i) pretraining on VessShape to inject a \emph{shape} bias and reduce dependence on texture, (ii) \emph{from scratch} training on natural datasets (VessMAP, DRIVE) to establish a baseline, and (iii) \emph{few-shot} fine-tuning to measure the transferability and sample efficiency of the learned representations.
+\subsection{Model architectures and training strategies}
+
+We adopt an encoder–decoder U-Net design, that is, the decoder is symmetrical to the encoder and the model contains skip connections between different encoder-decoder stages. Two models are compared, one with a ResNet18 and the other with a ResNet50 encoder \cite{}. The models were instantiated from the \textit{Segmentation Models Pytorch} Python package\footnote{\url{https://github.com/qubvel/segmentation_models.pytorch}}.
+
+Two training scenarios are considered. In the first, training is done from scratch separately on the DRIVE and VessMAP datasets to establish a baseline. The second scenario consists of pre-training on the VessShape dataset and fine-tuning on DRIVE and VessMAP to measure the transferability and sample efficiency of the learned representations. These two scenarios involve three distinct training procedures: i) pre-training on VessShape, ii) training from scratch on real-world data, and iii) fine-tuning on real-world data. These procedures are described next.
 
 \subsection{Pre-training on VessShape}
 
@@ -319,6 +332,7 @@ DRIVE & ResNet50 - From Scratch & 0.888 & 0.230 & 0.728 & 0.275 & 0.367 & 0.762 
 \label{s:conclusion}
 % Trabalhos futuros: testar o modelo em imagens 3D
 
+% One drawback of the method is that the network might not recognize vessels that do not follow the shape priors acquiried during training. For instance, stroke....
 
 
 \section*{Funding}
