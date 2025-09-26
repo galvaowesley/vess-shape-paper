@@ -11,3 +11,8 @@
 *.snm
 *.vrb
 drafts.tex
+*.bkp
+*.insyncdl
+draftsNotes.bib
+main.pdf
+drafts.pdf
