@@ -143,11 +143,9 @@ With the emergence of deep learning, some works have explored adding shape prior
 
 Modeling-based approaches usually start by generating a biologically plausible topology of the vasculature, followed by the definition of varying radii for vessel segments and the inclusion of texture for the vessels and the background. The typical noise found in the imaging modality of interest is also modeled. An important recent work in this direction is a foundation model called VesselFM~\cite{wittmann2025vesselfm} that was trained on a large number of synthetic and real images.
 
-??
+Regarding generative models, most works in the literature use inductive learning, applying Generative Adversarial Networks (GANs) to create samples~\cite{bellemo2018generative}. Synthetic samples conform to the learned patterns from the real dataset, allowing the generation of realistic images. Recent works considered diffusion models for the same task [??]. Some studies also developed style transfer approaches for domain adaptation between different datasets [??].
 
-The main drawback of the aforementioned works is that the network is trained to identify both the shape and texture of the blood vessels in the samples. Changes in the texture of the vessels due to diseases or modifications of the imaging device can lead to low segmentation performance. In addition, different models must be trained for different imaging modalities, where annotated data can be scarce. Our approach aims at training neural networks to segment any vascular tissue that follows the shape priors acquired from VessShape.
-
-%deepvesselnet, VesselFM (específicos para determinadas modalidades de imagem (fotografia de fundo, microscopia, ressonância, etc])
+The main drawback of the aforementioned works is that the network is trained to reproduce the shape and texture of blood vessels in specific datasets. Changes in the texture of the vessels due to diseases or modifications in the imaging device can lead to low segmentation performance. In addition, models must be trained for specific imaging modalities, even if annotated data are scarce. Our approach aims at training neural networks to segment any vascular tissue that follows the shape priors acquired from VessShape.
 
 
 
