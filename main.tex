@@ -211,9 +211,16 @@ To quantify the usefulness of the shape bias introduced by the VessShape dataset
 
 The two datasets originate from fundamentally different imaging modalities, resulting in distinct characteristics. The fundus images in DRIVE, which capture the entire retina, possess a clear global structure that includes landmarks like the optic disk. The samples also contain many very thin vessels which are challenging to segment. In contrast, the VessMAP images are highly magnified views of small cortical areas and have no discernible global organization. The borders of the vessels are generally less defined than the vessels from DRIVE. Another key difference is that, without any processing, the vessels in VessMAP are bright with dark backgrounds while the vessels in DRIVE are dark with bright backgrounds. Figure ?? shows one sample from each dataset.
 
+\begin{figure}[tbp]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/results/drive_vessmap_samples.pdf}
+    \caption{}
+    \label{f:drive_vessmap_samples}
+\end{figure}
+
 \subsection{Model architectures and training strategies}
 
-We adopt an encoder–decoder U-Net design, that is, the decoder is symmetrical to the encoder and the model contains skip connections between different encoder-decoder stages. Two models are compared, one with a ResNet18 and the other with a ResNet50 encoder \cite{}. The models were instantiated from the \textit{Segmentation Models Pytorch} Python package\footnote{\url{https://github.com/qubvel/segmentation_models.pytorch}}.
+We adopt an encoder–decoder U-Net design, that is, the decoder is symmetrical to the encoder and the model contains skip connections between different encoder-decoder stages. Two models ar compared, one with a ResNet18 and the other with a ResNet50 encoder \cite{}. The models were instantiated from the \textit{Segmentation Models Pytorch} Python package\footnote{\url{https://github.com/qubvel/segmentation_models.pytorch}}.
 
 Two training scenarios are considered. In the first, training is done from scratch separately on the DRIVE and VessMAP datasets to establish a baseline. The second scenario consists of pre-training on the VessShape dataset and fine-tuning on DRIVE and VessMAP to measure the transferability and sample efficiency of the learned representations. These two scenarios involve three distinct training procedures: i) pre-training on VessShape, ii) training from scratch on real-world data, and iii) fine-tuning on real-world data. These procedures are described next.
 
