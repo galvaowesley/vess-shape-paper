@@ -181,7 +181,7 @@ To generate each binary mask, the number of segments $K$, the order $n$ of the B
 Number of curves $K$ & $[1,20]$ & Number of branches/vessels generated per sample. \\
 Control points $n{+}1$ & $[2,20]$ & Bézier curve complexity (order $n$). \\
 Displacement scale $\delta$ (px) & $[50.0,150.0]$ & Controls curvature/tortuosity via the typical amplitude of control-point displacement. \\
-Initial radius $r_{0,k}$ (px) & $[1,5]$ & Basal vessel thickness; a smooth taper is applied along the branch. \\
+Initial radius $r_{0}$ (px) & $[1,5]$ & Basal vessel thickness; a smooth taper is applied along the branch. \\
 Matting blur $\sigma$ & $[1,2]$ & Standard deviation of the Gaussian used for $A = G_{\sigma} * M$. \\
 
 \hline
@@ -221,9 +221,11 @@ The two datasets originate from fundamentally different imaging modalities, resu
 
 \subsection{Model architectures and training strategies}
 
-We adopt an encoder–decoder U-Net design, that is, the decoder is symmetrical to the encoder and the model contains skip connections between different encoder-decoder stages. Two models ar compared, one with a ResNet18 and the other with a ResNet50 encoder \cite{}. The models were instantiated from the \textit{Segmentation Models Pytorch} Python package\footnote{\url{https://github.com/qubvel/segmentation_models.pytorch}}.
+We adopt an encoder–decoder U-Net design, that is, the decoder is symmetrical to the encoder and the model contains skip connections between different encoder-decoder stages. Two models ar compared, one with a ResNet18 and the other with a ResNet50 encoder \cite{he2016deep}. The models were instantiated from the \textit{Segmentation Models Pytorch} Python package\footnote{\url{https://github.com/qubvel/segmentation_models.pytorch}}.
 
 Two training scenarios are considered. In the first, training is done from scratch separately on the DRIVE and VessMAP datasets to establish a baseline. The second scenario consists of pre-training on the VessShape dataset and fine-tuning on DRIVE and VessMAP to measure the transferability and sample efficiency of the learned representations. These two scenarios involve three distinct training procedures: i) pre-training on VessShape, ii) training from scratch on real-world data, and iii) fine-tuning on real-world data. These procedures are described next.
+
+\subsection{Training from scratch on natural datasets}
 
 \subsection{Pre-training on VessShape}
 
@@ -260,7 +262,7 @@ Concretely, we pre-train two U-Net style models, one with a ResNet18 encoder and
 
 
 
-\subsection{Training from scratch on natural datasets}
+
 
 \subsection{Fine-tuning}
 
