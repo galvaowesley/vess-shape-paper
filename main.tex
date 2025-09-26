@@ -143,7 +143,7 @@ With the emergence of deep learning, some works have explored adding shape prior
 
 Modeling-based approaches usually start by generating a biologically plausible topology of the vasculature, followed by the definition of varying radii for vessel segments and the inclusion of texture for the vessels and the background. The typical noise found in the imaging modality of interest is also modeled. An important recent work in this direction is a foundation model called VesselFM~\cite{wittmann2025vesselfm} that was trained on a large number of synthetic and real images.
 
-Regarding generative models, most works in the literature use inductive learning, applying Generative Adversarial Networks (GANs) to create samples~\cite{bellemo2018generative}. Synthetic samples conform to the learned patterns from the real dataset, allowing the generation of realistic images. Recent works considered diffusion models for the same task [??]. Some studies also developed style transfer approaches for domain adaptation between different datasets [??].
+Regarding generative models, most works in the literature use inductive learning, applying Generative Adversarial Networks (GANs) to create samples~\cite{you2022application,andreini2021two,tavakkoli2020novel,costa2017end}. Synthetic samples conform to the learned patterns from the real dataset, allowing the generation of realistic images. Recent works considered diffusion models for the same task~\cite{go2024generation,guo2025vesseldiffusion,wang2025vastsd}. Some studies also developed style transfer approaches for domain adaptation between different datasets~\cite{peng2022unsupervised,chen2023segmentation,chen2021real}.
 
 The main drawback of the aforementioned works is that the network is trained to reproduce the shape and texture of blood vessels in specific datasets. Changes in the texture of the vessels due to diseases or modifications in the imaging device can lead to low segmentation performance. In addition, models must be trained for specific imaging modalities, even if annotated data are scarce. Our approach aims at training neural networks to segment any vascular tissue that follows the shape priors acquired from VessShape.
 
@@ -194,7 +194,7 @@ I \,=\, A\,F + (1-A)\,B,
 \end{equation}
 which ensures that vessel regions ($A \approx 1$) preserve the foreground while non-vessel regions ($A \approx 0$) retain the background. 
 
-Parameter $\sigma$ controls the smoothness of the vessel boundaries. After composition, the image $I$ undergoes channel-wise normalization using the ImageNet statistics for compatibility with pre-trained models. Examples of generated masks and images are shown in Figure~\ref{f:vessshape_sample}.
+Parameter $\sigma$ controls the smoothness of the vessel boundaries. Examples of generated masks and images are shown in Figure~\ref{f:vessshape_sample}.
 
 
 \begin{figure}[tbp]
@@ -219,48 +219,36 @@ The two datasets originate from fundamentally different imaging modalities, resu
 
 \subsection{Model architectures and training strategies}
 
-We adopt an encoder–decoder U-Net design, that is, the decoder is symmetrical to the encoder and the model contains skip connections between different encoder-decoder stages. Two models ar compared, one with a ResNet18 and the other with a ResNet50 encoder \cite{he2016deep}. The models were instantiated from the \textit{Segmentation Models Pytorch} Python package\footnote{\url{https://github.com/qubvel/segmentation_models.pytorch}}.
+We adopt an encoder–decoder U-Net design, that is, the decoder is symmetrical to the encoder and the model contains skip connections between different encoder-decoder stages. Two models are compared, one with a ResNet18 and the other with a ResNet50 encoder \cite{he2016deep}. The models were instantiated from the \textit{Segmentation Models Pytorch} Python package\footnote{\url{https://github.com/qubvel/segmentation_models.pytorch}}.
 
-Two training scenarios are considered. In the first, training is done from scratch separately on the DRIVE and VessMAP datasets to establish a baseline. The second scenario consists of pre-training on the VessShape dataset and fine-tuning on DRIVE and VessMAP to measure the transferability and sample efficiency of the learned representations. These two scenarios involve three distinct training procedures: i) pre-training on VessShape, ii) training from scratch on real-world data, and iii) fine-tuning on real-world data. These procedures are described next.
-
-\subsection{Training from scratch on natural datasets}
+Two training scenarios are considered. In the first, training is done from scratch separately on the DRIVE and VessMAP datasets to establish a baseline. The second scenario consists of pre-training on the VessShape dataset and fine-tuning on DRIVE and VessMAP to measure the transferability and sample efficiency of the learned representations. These two scenarios involve three distinct training procedures: i) pre-training on VessShape, ii) fine-tuning on real-world data and iii) training from scratch on real-world data. These procedures are described next.
 
 \subsection{Pre-training on VessShape}
 
-The pre-training on VessShape aims to expose the model to a wide variety of tubular geometries while keeping texture as a secondary cue, which tends to benefit the segmentation of thin structures. The model is trained to minimize the average loss over a large number of samples drawn from the synthetic dataset:
+The pre-training on VessShape aims to expose the model to a wide variety of tubular geometries while keeping texture as a secondary cue, which tends to benefit the segmentation of thin structures. Each training sample is generated on-the-fly, and we apply channel-wise normalization with ImageNet statistics. This continual reshuffling of appearance paired with stable geometric rules injects a strong shape bias while discouraging memorization of superficial textures. The model is optimized to minimize the average loss over this effectively unbound synthetic stream. 
 
-\begin{equation}
-    \theta^{\mathrm{VS}} \in \arg\min_{\theta} \; \mathbb{E}_{(I,M) \sim \mathrm{VessShape}} \; \mathcal{L}\big(f_{\theta}(I),\, M\big),
-\end{equation}
+We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to as VSUNet18 and VSUNet50. VSUNet18 was exposed to about 7.1 million synthetic images in roughly 8.6 hours of training, and VSUNet50 to about 53.0 million in roughly 78.3 hours. Table \ref{tab:vs_hparams} lists the hyperparameters, and Table \ref{tab:vessshape_results} summarizes training performance on VessShape.
 
-Here, $f_{\theta}$ denotes the segmentation network with parameters $\theta$; $I$ is an input image and $M$ its ground-truth mask; $\mathcal{L}(\cdot,\cdot)$ is the training loss; $\mathbb{E}[\cdot]$ is the expectation over samples drawn from VessShape; $\arg\min$ chooses the parameters that minimize this expected loss; and $\theta^{\mathrm{VS}}$ are the weights obtained after pre-training on VessShape.
-
-Concretely, we pre-train two U-Net style models, one with a ResNet18 encoder and another with a ResNet50 encoder—referred to as VSUNet18 and VSUNet50. The training stream intentionally floods the model with vessel geometries, while textures keep changing in the background. This narrative of abundant shapes and shifting appearances nudges the network to rely less on superficial texture cues and more on geometric regularities that matter for connectivity and thin-structure recovery. Below we detail the VSUNet50 setup and summarize its performance on VessShape.
-
-\begin{table*}[t]
+\begin{table}[t]
     \caption{Pre-training hyperparameters on VessShape.}
     \label{tab:vs_hparams}
     \centering
     \begingroup
     \small
-    \setlength{\tabcolsep}{3pt}
+    \setlength{\tabcolsep}{6pt}
     \renewcommand{\arraystretch}{1.15}
-    \begin{tabularx}{\textwidth}{l r r r r r r}
+    \begin{tabular}{l r r}
         \hline
-        	\textbf{Model} & \textbf{LR} & \textbf{WD} & \textbf{Batch} & \textbf{LR decay} & \textbf{Imgs/epoch} & \textbf{Max epochs} \\
+        	\textbf{Hyperparameter} & \textbf{VSUNet50} & \textbf{VSUNet18} \\
         \hline
-        VSUNet50 & 1.0e-3 & 1.0e-4 & 96 & 0.0 & 50{,}000 & 3000 \\
-        VSUNet18 & 1.0e-2 & 0.0 & 192 & 0.0 & 50{,}000 & 1000 \\
+        Batch size & 96 & 192 \\
+        Learning rate & 1.0e-3 & 1.0e-2 \\
+        Learning rate decay & 0.0 & 0.0 \\
+        Weight decay & 1.0e-4 & 0.0 \\
         \hline
-    \end{tabularx}
+    \end{tabular}
     \endgroup
-\end{table*}
-
-
-
-
-
-
+\end{table}
 
 \subsection{Fine-tuning}
 
@@ -289,6 +277,8 @@ Concretely, we pre-train two U-Net style models, one with a ResNet18 encoder and
     \end{tabular}
     \endgroup
 \end{table}
+
+\subsection{Training from scratch on natural datasets}
 
 \section{Results}
 \label{s:results}
