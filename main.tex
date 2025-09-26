@@ -269,21 +269,24 @@ Concretely, we pre-train two U-Net style models, one with a ResNet18 encoder and
 - Procedure
 
 \begin{table}[t]
-    \caption{VessShape results after pre-training.}
-    \label{tab:vs_vessshape_results}
+    \caption{Performance of VSUNet variants after pre-training on VessShape.}
+    \label{tab:vessshape_results}
     \centering
     \begingroup
     \small
-    \setlength{\tabcolsep}{3pt}
+    \setlength{\tabcolsep}{6pt}
     \renewcommand{\arraystretch}{1.15}
-    \begin{tabularx}{\columnwidth}{l r r r r r}
+    \begin{tabular}{l r r}
         \hline
-        	\textbf{Model} & \textbf{Acc} & \textbf{IoU} & \textbf{Prec} & \textbf{Rec} & \textbf{Dice} \\
+        	\textbf{Metric} & \textbf{VSUNet50} & \textbf{VSUNet18} \\
         \hline
-        VSUNet50 & 0.958 & 0.748 & 0.763 & 0.973 & 0.855 \\
-        VSUNet18 & 0.972 & 0.816 & 0.830 & 0.979 & 0.898 \\
+        Dice & $0.861 \,\pm\, 0.022$ & $0.859 \,\pm\, 0.077$ \\
+        Acc & $0.960 \,\pm\, 0.008$ & $0.956 \,\pm\, 0.037$ \\
+        IoU & $0.758 \,\pm\, 0.032$ & $0.761 \,\pm\, 0.096$ \\
+        Prec & $0.780 \,\pm\, 0.037$ & $0.774 \,\pm\, 0.096$ \\
+        Rec & $0.964 \,\pm\, 0.012$ & $0.974 \,\pm\, 0.018$ \\
         \hline
-    \end{tabularx}
+    \end{tabular}
     \endgroup
 \end{table}
 
