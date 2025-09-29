@@ -15,4 +15,7 @@ drafts.tex
 *.insyncdl
 draftsNotes.bib
 main.pdf
-drafts.pdf
+#pasta drafts
+/drafts/
+# Arquivo drafts
+drafts.*
