@@ -116,11 +116,11 @@ longbibliography
 
 \begin{abstract}
 
-??
+Semantic segmentation of blood vessels is a crucial task in medical image analysis, but its progress is often hindered by the scarcity of large annotated datasets and the poor generalization of models across different imaging modalities. A key aspect is the tendency of Convolutional Neural Networks (CNNs) to learn texture-based features, which limits their performance when applied to new domains with different visual characteristics. We hypothesize that leveraging the universal geometric prior of vessel-like shapes, tubular and branching structures, can lead to more robust and data-efficient models. To investigate this, we introduce VessShape, a large-scale 2D synthetic dataset designed to instill a shape bias in segmentation models. VessShape consists of images with procedurally generated tubular geometries combined with a wide variety of foreground and background textures, encouraging models to learn shape cues rather than textures. We demonstrate that a model pretrained on VessShape achieves strong few-shot segmentation performance on two real-world datasets from different domains, requiring only four to ten samples for fine-tuning. Furthermore, the model exhibits notable zero-shot capabilities, effectively segmenting vessels in unseen domains without any target-specific training. Our results indicate that pretraining with a strong shape bias can be an effective strategy to overcome data scarcity and improve model generalization in blood vessel segmentation.
 
 \end{abstract}
 
-\keywords{Blood vessel segmentation, Connectivity, post-processing}
+\keywords{Blood vessel segmentation, shape bias, domain adaptation, few-shot learning}
 
 \maketitle
 \thispagestyle{plain}
@@ -129,13 +129,31 @@ longbibliography
 \section{Introduction}
 \label{sec:introduction}
 
-VessShape is a synthetic image dataset that combines tubular, vessel-like shapes with diverse foreground and background textures. The central idea is to provide a robust set that can be used to pre-train blood vessel segmentation models by keeping geometric priors fixed and drastically changing the texture, encouraging models to learn shape cues (connectivity, tapering, bifurcations) rather than learning the texture.
+The semantic segmentation of blood vessels is an active area of research, driven by the demand for precise and automated analysis of medical images in both human and animal tissues. A significant challenge in this task is the labor-intensive process of manual annotation, which requires domain expertise to create accurate segmentation masks.
 
+This annotation bottleneck has led to a scarcity of large-scale datasets, which limits the training capacity of deep learning models. For instance, widely used public datasets such as DRIVE \cite{Staal2004} and CHASE\_DB1 \cite{Fraz2012ensemble} contain only a few dozen annotated images each. Although recent efforts have introduced new datasets \cite{jin2022fives, fhima2024lunet}, the availability of large and diverse collections remains limited. This problem is compounded by significant domain shifts between different imaging modalities, such as retinal fundus photography and cerebral cortex microscopy. Variations in texture, vessel density, and caliber hinder the ability of models trained in one domain to generalize to another.
+
+Transfer learning is a common strategy to address these limitations. By reusing representations learned on a source domain, models can achieve better performance on a target domain, even with limited data. Techniques such as fine-tuning and domain adaptation allow models pretrained on large-scale natural image datasets, like ImageNet \cite{JiaDeng2009}, to be adapted for biomedical segmentation tasks \cite{zoetmulderDomainTaskspecificTransfer2022}.
+
+However, a potential pitfall of standard transfer learning is the inherent bias of Convolutional Neural Networks (CNNs) toward learning texture-based features rather than geometric shapes \cite{geirhos2018, islam2021shape}. This texture bias can limit generalization across domains with different visual styles. Research has shown that models trained with an emphasis on shape cues exhibit improved performance and robustness \cite{geirhos2018}. This suggests that transferring shape representations, rather than texture-rich features, could be a more effective strategy for few-shot blood vessel segmentation.
+
+The task of blood vessel segmentation is particularly well suited for a shape-centric approach. The fundamental geometry of blood vessels, tubular and branching structures, is a consistent prior across diverse imaging modalities, from retinal fundus photographs to cerebral cortex microscopy images. While textures and other visual characteristics may vary significantly between these domains, the underlying shape remains a universal identifier. For example, a human observer who has learned to identify vessels in one modality can readily recognize them in another, as illustrated in Figure~\ref{f:motivation}.
+
+\begin{figure}[tbp]
+    \centering
+    \includegraphics[width=\columnwidth]{figures/vessel_retinal_cortex.pdf}
+    \caption{Illustration of the universality of vessel shape. (a) Fluorescence microscopy sample of a mouse cortex. (b) Fundus photograph of a human eye. Despite having different textures, the vessels have similar shapes.}
+    \label{f:motivation}
+\end{figure}
+
+Based on this observation, we hypothesize that a model pretrained on a source domain with a strong shape bias will require only a few annotated samples to adapt to a new target domain. We expect such a model to outperform one trained from scratch in the target domain by effectively reusing its learned geometric priors. To test this hypothesis, we introduce VessShape, a large-scale synthetic dataset designed for pretraining shape-aware segmentation models. VessShape consists of 2D images with tubular, vessel-like structures paired with a wide variety of foreground and background textures. By fixing the geometric priors while diversifying the textures, the dataset explicitly encourages models to learn robust shape features over superficial texture cues.
+
+In this work, we demonstrate that a model pretrained on VessShape achieves strong few-shot performance, accurately segmenting vasculature in different target domains using only four to ten annotated samples for fine-tuning. Furthermore, we observe remarkable zero-shot capabilities, where the pretrained model can effectively segment vessels in new domains without any target-specific training.
 
 \section{Related Works}
 \label{sec:related}
 
-Many previous works have considered shape priors for medical image segmentation [??]. This is possible when organelles, cells, or organs have a known shape and the segmentation process can assume an optimal shape or additional optimization criteria such as the requirement of smooth borders. Instance segmentation is probably the most common task in which shape priors have been explored. A particular challenge with blood vessel identification is that it usually requires a semantic segmentation of the image. 
+Many previous work has considered shape priors for medical image segmentation. This is possible when organelles, cells, or organs have a known shape and the segmentation process can assume an optimal shape or additional optimization criteria such as the requirement of smooth borders. Instance segmentation is probably the most common task in which shape priors have been explored. A particular challenge with blood vessel identification is that it usually requires a semantic segmentation of the image. 
 
 Before the popularity of deep learning methods, local shape priors were the dominant approach to vessel segmentation. Blood vessels tend to have a tubular structure. Thus, the usual approach was to develop filters aimed at identifying tubular objects. A popular line of research was based on the eigenvalues of the Hessian matrix~\cite{fraz2012blood,sato1998three}. Arguably, the most popular Hessian-based method is the Frangi filter~\cite{frangi1998multiscale}, which consists of combining the eigenvalues to define a tubularity score for the pixels of the vessels. Another popular line of research was based on the definition of line or Gabor filter templates to identify relevant vessel structures. An important drawback of these methods is that the tubularity assumption is not valid at bifurcation and termination points.
 
@@ -157,7 +175,7 @@ The main drawback of the aforementioned works is that the network is trained to 
 VessShape\footnote{{Dataset repository}: \url{https://github.com/galvaowesley/vess-shape-dataset}} defines the geometry of its synthetic images using Bézier curves, which allow a flexible and controlled representation of tubular shapes. Each vascular segment is described by an $n$th-order Bézier curve with control points $\{\mathbf{p}_i\}_{i=0}^n$. Segment tortuosity is adjusted by small perturbations to these control points, ensuring realistic and diverse vessel geometry. The Bézier curve $\mathbf{c}(t)$ of a vessel segment is given by Equation~\ref{eq:bezier}, where $t$ varies from 0 to 1.
 
 \begin{equation}
-\mathbf{c}(t) \,=\, \sum_{i=0}^{n} \binom{n}{i} (1-t)^{n-i} t^{i} \, p_i,
+\mathbf{c}(t) \,=\, \sum_{i=0}^{n} \binom{n}{i} (1-t)^{n-i} t^{i} \, \mathbf{p}_i,
 \label{eq:bezier}
 \end{equation}
 
@@ -206,7 +224,7 @@ Parameter $\sigma$ controls the smoothness of the vessel boundaries. Examples of
 
 \subsection{Real-world data for validation}
 
-To quantify the usefulness of the shape bias introduced by the VessShape dataset, we consider two blood vessel datasets: DRIVE and VessMAP. The DRIVE dataset~\cite{} serves as a popular standard for benchmarking retinal vessel segmentation algorithms and is composed of 40 fundus photographs split into 20 for training and 20 for testing, each measuring 584×565 pixels. The VessMAP dataset consists of 100 images, 256×256 pixels each, acquired via fluorescence microscopy of the mouse cortex. It was curated to include a variety of challenging vascular features, such as inconsistent noise and contrast levels, different vessel sizes, prominent imaging artifacts, and intensity fluctuations within vessel structures.
+To quantify the usefulness of the shape bias introduced by the VessShape dataset, we consider two blood vessel datasets: DRIVE and VessMAP. The DRIVE dataset~\cite{Staal2004} serves as a popular standard for benchmarking retinal vessel segmentation algorithms and is composed of 40 fundus photographs split into 20 for training and 20 for testing, each measuring 584×565 pixels. The VessMAP dataset~\cite{viana2025new} consists of 100 images, 256×256 pixels each, acquired via fluorescence microscopy of the mouse cortex. It was curated to include a variety of challenging vascular features, such as inconsistent noise and contrast levels, different vessel sizes, prominent imaging artifacts, and intensity fluctuations within vessel structures.
 
 The two datasets originate from fundamentally different imaging modalities, resulting in distinct characteristics. The fundus images in DRIVE, which capture the entire retina, possess a clear global structure that includes landmarks like the optic disk. The samples also contain many very thin vessels which are challenging to segment. In contrast, the VessMAP images are highly magnified views of small cortical areas and have no discernible global organization. The borders of the vessels are generally less defined than the vessels from DRIVE. Another key difference is that, without any processing, the vessels in VessMAP are bright with dark backgrounds while the vessels in DRIVE are dark with bright backgrounds. Figure \ref{f:drive_vessmap_samples} shows one sample from each dataset.
 
@@ -221,16 +239,16 @@ The two datasets originate from fundamentally different imaging modalities, resu
 
 We adopt an encoder–decoder U-Net design, that is, the decoder is symmetrical to the encoder and the model contains skip connections between different encoder-decoder stages. Two models are compared, one with a ResNet18 and the other with a ResNet50 encoder \cite{he2016deep}. The models were instantiated from the \textit{Segmentation Models Pytorch} Python package\footnote{\url{https://github.com/qubvel/segmentation_models.pytorch}}.
 
-Two training scenarios are considered. In the first, training is done from scratch separately on the DRIVE and VessMAP datasets to establish a baseline. The second scenario consists of pre-training on the VessShape dataset and fine-tuning on DRIVE and VessMAP to measure the transferability and sample efficiency of the learned representations. These two scenarios involve three distinct training procedures: i) pre-training on VessShape, ii) fine-tuning on real-world data and iii) training from scratch on real-world data. These procedures are described next.
+Two training scenarios are considered. In the first, training is done from scratch separately on the DRIVE and VessMAP datasets to establish a baseline. The second scenario consists of pretraining on the VessShape dataset and fine-tuning on DRIVE and VessMAP to measure the transferability and sample efficiency of the learned representations. These two scenarios involve three distinct training procedures: i) pretraining on VessShape, ii) fine-tuning on real-world data and iii) training from scratch on real-world data. These procedures are described next.
 
-\subsection{Pre-training on VessShape}
+\subsection{Pretraining on VessShape}
 
-The pre-training on VessShape aims to expose the model to a wide variety of tubular geometries while keeping texture as a secondary cue, which tends to benefit the segmentation of thin structures. Each training sample is generated on-the-fly, and we apply channel-wise normalization with ImageNet statistics. This continual reshuffling of appearance paired with stable geometric rules injects a strong shape bias while discouraging memorization of superficial textures. The model is optimized to minimize the average loss over this effectively unbound synthetic stream. 
+The pretraining on VessShape aims to expose the model to a wide variety of tubular geometries while keeping texture as a secondary cue, which tends to benefit the segmentation of thin structures. Each training sample is generated on-the-fly, and we apply channel-wise normalization with ImageNet statistics. This continual reshuffling of appearance paired with stable geometric rules injects a strong shape bias while discouraging memorization of superficial textures. The model is optimized to minimize the average loss over this effectively unbound synthetic stream. 
 
-We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to as VSUNet18 and VSUNet50. VSUNet18 was exposed to about 7.1 million synthetic images in roughly 8.6 hours of training, and VSUNet50 to about 53.0 million in roughly 78.3 hours. Table \ref{tab:vs_hparams} lists the hyperparameters, and Table~\ref{tab:vessshape_results} summarizes training performance on VessShape. All pre-training runs were executed on a workstation with 24 logical CPU cores and a single NVIDIA GeForce RTX 3090 GPU.
+We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to as VSUNet18 and VSUNet50. VSUNet18 was exposed to about 7.1 million synthetic images in roughly 8.6 hours of training, and VSUNet50 to about 53.0 million in roughly 78.3 hours. Table \ref{tab:vs_hparams} lists the hyperparameters, and Table~\ref{tab:vessshape_results} summarizes training performance on VessShape. All pretraining runs were executed on a workstation with 24 logical CPU cores and a single NVIDIA GeForce RTX 3090 GPU.
 
 \begin{table}[t]
-    \caption{Pre-training hyperparameters on VessShape.}
+    \caption{Pretraining hyperparameters on VessShape.}
     \label{tab:vs_hparams}
     \centering
     \begingroup
@@ -257,7 +275,7 @@ We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to a
 - Procedure
 
 \begin{table}[t]
-    \caption{Performance of VSUNet variants after pre-training on VessShape.}
+    \caption{Performance of VSUNet variants after pretraining on VessShape.}
     \label{tab:vessshape_results}
     \centering
     \begingroup
@@ -305,7 +323,7 @@ We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to a
 % Adicionar a comparação de segmentação do VessMap e DRIVE para 0-shot, 1-shot e max-shot
 % Argumentar que o nosso modelo é capaz de segmentar em zero-shot a forma do vaso, mesmo para VessMap que tem vasos com intensidade mais alta (branco), e DRIVE, com vasos com intensidade mais baixa(preto). 
 
-% Combined VessMAP + DRIVE few-shot table
+% TODO: Testar trocando o número de exemplos como colunas, usando só o DICE. 
 \begin{table*}[t]
     \caption{Few-shot and zero-shot segmentation on VessMAP and DRIVE. Values are mean $\pm$ standard deviation over repeated runs (fine-tuning for VSUNet models and training from scratch for U-Net baselines) evaluated on each dataset test set. Zero-shot rows come from a single pretrained inference (no deviation available).}
     \label{tab:combined_fewshot}
@@ -353,7 +371,15 @@ We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to a
 
 \section{Conclusion}
 \label{s:conclusion}
-% Trabalhos futuros: testar o modelo em imagens 3D
+
+We proposed a strategy centered on instilling a strong shape bias in deep learning models by pretraining them on VessShape, a large-scale synthetic dataset. By combining simple, universal vessel-like geometries with highly diverse textures, VessShape encourages models to learn robust shape priors instead of domain-specific texture features.
+
+Our experiments demonstrated the effectiveness of this approach. A model pretrained on VessShape achieved strong few-shot performance on two distinct and challenging real-world datasets, DRIVE (retinal fundus photography) and VessMAP (cerebral cortex microscopy), requiring only a handful of annotated samples to adapt to these new domains. Furthermore, the model exhibited remarkable zero-shot capabilities, successfully identifying vessel structures without any fine-tuning. These results confirm our hypothesis that the use of a fundamental geometric prior is a powerful method to improve data efficiency and model robustness against domain shifts.
+
+Although our method shows significant promise, there are avenues for future work. The current geometry generation in VessShape, based on Bézier curves, could be extended to include more complex and biologically plausible vascular topologies, such as true bifurcations and network-like structures. Furthermore, extending the VessShape generation framework to 3D would allow this pretraining strategy to be applied to volumetric medical imaging modalities such as CT and MRI. Future studies could also explore the application of a shape-centric pretraining approach to the segmentation of other tubular structures in biology, such as neurons or airways.
+
+Our work underscores a valuable principle: for segmentation tasks with strong and consistent shape priors, abstracting away from realism to focus on core geometric features can be a more effective and generalizable pretraining strategy than attempting to perfectly mimic the appearance of a single target domain.
+
 
 % One drawback of the method is that the network might not recognize vessels that do not follow the shape priors acquiried during training. For instance, stroke....
 
