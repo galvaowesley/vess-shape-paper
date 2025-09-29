@@ -270,7 +270,7 @@ We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to a
 
 \subsection{Fine-tuning}
 
-We developed a systematic fine-tuning protocol for few-shot and full-regime training applicable to any 2D blood vessel dataset, here applied separately to DRIVE and VessMAP. The goal is to quantify performance gains as the number of labeled examples used for adaptation increases. For the VSUNet variants we always start from VessShape-pretrained weights and update only the model parameters using the sampled subsets.
+We developed a systematic fine-tuning protocol \footnote{Code (VessShape pretraining + few-shot fine-tuning): \url{https://github.com/galvaowesley/vess-shape-experiments} } for few-shot and full-regime training applicable to any 2D blood vessel dataset, here applied separately to DRIVE and VessMAP. The goal is to quantify performance gains as the number of labeled examples used for adaptation increases. For the VSUNet variants we always start from VessShape-pretrained weights and update only the model parameters using the sampled subsets.
 
 For each dataset $D$ we split the images into three disjoint subsets: $\mathcal{V}_{\text{train}}$, the pool of labeled images eligible for few-shot sampling; $\mathcal{V}_{\text{val}}$, used for auxiliary adjustments; and $\mathcal{V}_{\text{test}}$, held out for final evaluation. For DRIVE we use 16 images in $\mathcal{V}_{\text{train}}$, 4 in $\mathcal{V}_{\text{val}}$, and keep 20 images in $\mathcal{V}_{\text{test}}$. For VessMAP we adopt 60 images for $\mathcal{V}_{\text{train}}$, 20 for $\mathcal{V}_{\text{val}}$, and 20 for $\mathcal{V}_{\text{test}}$.
 
@@ -282,9 +282,11 @@ To apply fine-tuning with progressive sampling we define an ordered set of sampl
 
 For each $n$ we keep the set of already used combinations and resample until obtaining a new combination or reaching a maximum number of attempts. If the combinatorial space is exhausted (large $n$ or high $R$), repetition is accepted, ensuring practical uniqueness while combinations remain available.
 
-Each subset $\mathcal{V}^{(n,r)}_{\text{train}}$ is used to fine-tune the model for $S$ repetitions ($s=1,\ldots,S$) The model is optimized to minimize the average loss over $\mathcal{V}^{(n,r)}_{\text{train}}$, and performance is monitored on $\mathcal{V}_{\text{val}}$ after each epoch. The last checkpoint is then evaluated on $\mathcal{V}_{\text{test}}$. This approach allows decomposition of variance into: (i) training variability conditioned on a fixed image combination (within $(n,r)$) and (ii) variability across different image combinations (between runs $r$). All sampling operations are controlled by a fixed seed for reproducibility.
+Each subset $\mathcal{V}^{(n,r)}_{\text{train}}$ is used to fine-tune the model for $S$ repetitions ($s=1,\ldots,S$) The model is optimized to minimize the average loss over $\mathcal{V}^{(n,r)}_{\text{train}}$, and performance is monitored on $\mathcal{V}_{\text{val}}$ after each epoch. The last checkpoint is then evaluated on $\mathcal{V}_{\text{test}}$. This approach allows decomposition of variance into: (i) training variability conditioned on a fixed image combination (within $(n,r)$) and (ii) variability across different image combinations (between runs $r$).
 
-In this work we set $R=5$ and $S=3$. The sample size sequences $\mathcal{N}$ are $\{1,2,4,8,16\}$ for DRIVE and $\{1,2,4,8,16,18,20\}$ for VessMAP. We also consider the zero-shot case ($n=0$), in which the pretrained model is evaluated directly on $\mathcal{V}_{\text{test}}$ without any adaptation on $D$.
+In this work we set $R=5$ and $S=3$. The sample size sequences $\mathcal{N}$ are $\{1,2,4,8,16\}$ for DRIVE and $\{1,2,4,8,16,18,20\}$ for VessMAP. We also consider the zero-shot case ($n=0$), in which the pretrained model is evaluated directly on $\mathcal{V}_{\text{test}}$ without any adaptation on $D$. 
+
+Additionally, we enforce reproducibility via a two-level seeding scheme: a deterministic seed derived from $(n,r)$ defines each training subset, which is then reused across $S$ stochastic repetitions differing only by a repetition seed
 
 
 
