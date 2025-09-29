@@ -239,24 +239,16 @@ The two datasets originate from fundamentally different imaging modalities, resu
 
 We adopt an encoder–decoder U-Net design, that is, the decoder is symmetrical to the encoder and the model contains skip connections between different encoder-decoder stages. Two models are compared, one with a ResNet18 and the other with a ResNet50 encoder \cite{he2016deep}. The models were instantiated from the \textit{Segmentation Models Pytorch} Python package\footnote{\url{https://github.com/qubvel/segmentation_models.pytorch}}.
 
-Two training scenarios are considered. In the first, training is done from scratch separately on the DRIVE and VessMAP datasets to establish a baseline. The second scenario consists of pre-training on the VessShape dataset and fine-tuning on DRIVE and VessMAP to measure the transferability and sample efficiency of the learned representations. These two scenarios involve three distinct training procedures: i) pre-training on VessShape, ii) training from scratch on real-world data, and iii) fine-tuning on real-world data. These procedures are described next.
-
-\subsection{Training from scratch on natural datasets}
+Two training scenarios are considered. In the first, training is done from scratch separately on the DRIVE and VessMAP datasets to establish a baseline. The second scenario consists of pretraining on the VessShape dataset and fine-tuning on DRIVE and VessMAP to measure the transferability and sample efficiency of the learned representations. These two scenarios involve three distinct training procedures: i) pretraining on VessShape, ii) fine-tuning on real-world data and iii) training from scratch on real-world data. These procedures are described next.
 
 \subsection{Pretraining on VessShape}
 
-The pre-training on VessShape aims to expose the model to a wide variety of tubular geometries while keeping texture as a secondary cue, which tends to benefit the segmentation of thin structures. The model is trained to minimize the average loss over a large number of samples drawn from the synthetic dataset:
+The pretraining on VessShape aims to expose the model to a wide variety of tubular geometries while keeping texture as a secondary cue, which tends to benefit the segmentation of thin structures. Each training sample is generated on-the-fly, and we apply channel-wise normalization with ImageNet statistics. This continual reshuffling of appearance paired with stable geometric rules injects a strong shape bias while discouraging memorization of superficial textures. The model is optimized to minimize the average loss over this effectively unbound synthetic stream. 
 
-\begin{equation}
-    \theta^{\mathrm{VS}} \in \arg\min_{\theta} \; \mathbb{E}_{(I,M) \sim \mathrm{VessShape}} \; \mathcal{L}\big(f_{\theta}(I),\, M\big),
-\end{equation}
+We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to as VSUNet18 and VSUNet50. VSUNet18 was exposed to about 7.1 million synthetic images in roughly 8.6 hours of training, and VSUNet50 to about 53.0 million in roughly 78.3 hours. Table \ref{tab:vs_hparams} lists the hyperparameters, and Table~\ref{tab:vessshape_results} summarizes training performance on VessShape. All pretraining runs were executed on a workstation with 24 logical CPU cores and a single NVIDIA GeForce RTX 3090 GPU.
 
-Here, $f_{\theta}$ denotes the segmentation network with parameters $\theta$; $I$ is an input image and $M$ its ground-truth mask; $\mathcal{L}(\cdot,\cdot)$ is the training loss; $\mathbb{E}[\cdot]$ is the expectation over samples drawn from VessShape; $\arg\min$ chooses the parameters that minimize this expected loss; and $\theta^{\mathrm{VS}}$ are the weights obtained after pre-training on VessShape.
-
-Concretely, we pre-train two U-Net style models, one with a ResNet18 encoder and another with a ResNet50 encoder—referred to as VSUNet18 and VSUNet50. The training stream intentionally floods the model with vessel geometries, while textures keep changing in the background. This narrative of abundant shapes and shifting appearances nudges the network to rely less on superficial texture cues and more on geometric regularities that matter for connectivity and thin-structure recovery. Below we detail the VSUNet50 setup and summarize its performance on VessShape.
-
-\begin{table*}[t]
-    \caption{Pre-training hyperparameters on VessShape.}
+\begin{table}[t]
+    \caption{Pretraining hyperparameters on VessShape.}
     \label{tab:vs_hparams}
     \centering
     \begingroup
