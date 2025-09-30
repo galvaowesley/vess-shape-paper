@@ -243,9 +243,9 @@ Two training scenarios are considered. In the first, training is done from scrat
 
 \subsection{Pretraining on VessShape}
 
-The pretraining on VessShape aims to expose the model to a wide variety of tubular geometries while keeping texture as a secondary cue, which tends to benefit the segmentation of thin structures. Each training sample is generated on-the-fly, and we apply channel-wise normalization with ImageNet statistics. This continual reshuffling of appearance paired with stable geometric rules injects a strong shape bias while discouraging memorization of superficial textures. The model is optimized to minimize the average loss over this effectively unbound synthetic stream. 
+The pretraining on VessShape aims to expose the model to a wide variety of tubular geometries while keeping texture as a secondary cue. Each training sample is generated on-the-fly. This continual reshuffling of appearance paired with stable geometric rules should inject a strong shape bias while discouraging memorization of textures. The model is optimized to minimize the cross-entropy loss over this effectively unbound synthetic stream. 
 
-We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to as VSUNet18 and VSUNet50. VSUNet18 was exposed to about 7.1 million synthetic images in roughly 8.6 hours of training, and VSUNet50 to about 53.0 million in roughly 78.3 hours. Table \ref{tab:vs_hparams} lists the hyperparameters, and Table~\ref{tab:vessshape_results} summarizes training performance on VessShape. All pretraining runs were executed on a workstation with 24 logical CPU cores and a single NVIDIA GeForce RTX 3090 GPU.
+We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to as VSUNet18 and VSUNet50. VSUNet18 was exposed to about 7.1 million synthetic images in roughly 8.6 hours of training, and VSUNet50 to about 53.0 million in roughly 78.3 hours. Channel-wise normalization with ImageNet statistics was used for all input images. Table \ref{tab:vs_hparams} lists the hyperparameters used. Table~\ref{tab:vessshape_results} summarizes training performance on VessShape. All pretraining runs were executed on a workstation with 24 logical CPU cores and a single NVIDIA GeForce RTX 3090 GPU.
 
 \begin{table}[t]
     \caption{Pretraining hyperparameters on VessShape.}
@@ -261,7 +261,6 @@ We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to a
         \hline
         Batch size & 96 & 192 \\
         Learning rate & 1.0e-3 & 1.0e-2 \\
-        Learning rate decay & 0.0 & 0.0 \\
         Weight decay & 1.0e-4 & 0.0 \\
         \hline
     \end{tabular}
@@ -270,7 +269,7 @@ We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to a
 
 \subsection{Fine-tuning}
 
-We developed a systematic fine-tuning protocol \footnote{Code (VessShape pretraining + few-shot fine-tuning): \url{https://github.com/galvaowesley/vess-shape-experiments} } for few-shot and full-regime training applicable to any 2D blood vessel dataset, here applied separately to DRIVE and VessMAP. The goal is to quantify performance gains as the number of labeled examples used for adaptation increases. For the VSUNet variants we always start from VessShape-pretrained weights and update only the model parameters using the sampled subsets.
+We developed a systematic fine-tuning protocol\footnote{Code (VessShape pretraining + few-shot fine-tuning): \url{https://github.com/galvaowesley/vess-shape-experiments} } for few-shot training applicable to any 2D blood vessel dataset, but here applied to DRIVE and VessMAP. The goal is to quantify performance gains as the number of labeled examples used for adaptation increases. For the VSUNet variants, we always start from VessShape-pretrained weights.
 
 For each dataset $D$ we split the images into three disjoint subsets: $\mathcal{V}_{\text{train}}$, the pool of labeled images eligible for few-shot sampling; $\mathcal{V}_{\text{val}}$, used for auxiliary adjustments; and $\mathcal{V}_{\text{test}}$, held out for final evaluation. For DRIVE we use 16 images in $\mathcal{V}_{\text{train}}$, 4 in $\mathcal{V}_{\text{val}}$, and keep 20 images in $\mathcal{V}_{\text{test}}$. For VessMAP we adopt 60 images for $\mathcal{V}_{\text{train}}$, 20 for $\mathcal{V}_{\text{val}}$, and 20 for $\mathcal{V}_{\text{test}}$.
 
@@ -280,9 +279,9 @@ To apply fine-tuning with progressive sampling we define an ordered set of sampl
 \]
 
 
-For each $n$ we keep the set of already used combinations and resample until obtaining a new combination or reaching a maximum number of attempts. If the combinatorial space is exhausted (large $n$ or high $R$), repetition is accepted, ensuring practical uniqueness while combinations remain available.
+For each $n$, we keep the set of already used samples and resample until obtaining a new combination or reaching a maximum number of attempts. If the combinatorial space is exhausted (for large $n$ or high $R$), repetition is allowed, ensuring training runs that are as diverse as possible.
 
-Each subset $\mathcal{V}^{(n,r)}_{\text{train}}$ is used to fine-tune the model for $S$ repetitions ($s=1,\ldots,S$) The model is optimized to minimize the average loss over $\mathcal{V}^{(n,r)}_{\text{train}}$, and performance is monitored on $\mathcal{V}_{\text{val}}$ after each epoch. The last checkpoint is then evaluated on $\mathcal{V}_{\text{test}}$. This approach allows decomposition of variance into: (i) training variability conditioned on a fixed image combination (within $(n,r)$) and (ii) variability across different image combinations (between runs $r$).
+Each subset $\mathcal{V}^{(n,r)}_{\text{train}}$ is used to fine-tune the model $S$ times ($s=1,\ldots,S$). The model is optimized to minimize the cros-entropy loss over $\mathcal{V}^{(n,r)}_{\text{train}}$, and performance is monitored on $\mathcal{V}_{\text{val}}$ after each epoch. The last checkpoint is then evaluated on $\mathcal{V}_{\text{test}}$. This approach allows decomposition of variance into: (i) training variability conditioned on a fixed image combination (within $(n,r)$) and (ii) variability across different image combinations between runs $r$.
 
 In this work we set $R=5$ and $S=3$. The sample size sequences $\mathcal{N}$ are $\{1,2,4,8,16\}$ for DRIVE and $\{1,2,4,8,16,18,20\}$ for VessMAP. We also consider the zero-shot case ($n=0$), in which the pretrained model is evaluated directly on $\mathcal{V}_{\text{test}}$ without any adaptation on $D$. 
 
