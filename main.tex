@@ -278,7 +278,6 @@ To apply fine-tuning with progressive sampling we define an ordered set of sampl
 \mathcal{V}^{(n,r)}_{\text{train}} = \text{sample}(\mathcal{V}_{\text{train}}, n), \qquad \mathcal{V}^{(n,r)}_{\text{train}} \subseteq \mathcal{V}_{\text{train}}.
 \]
 
-
 For each $n$, we keep the set of already used samples and resample until obtaining a new combination or reaching a maximum number of attempts. If the combinatorial space is exhausted (for large $n$ or high $R$), repetition is allowed, ensuring training runs that are as diverse as possible.
 
 Each subset $\mathcal{V}^{(n,r)}_{\text{train}}$ is used to fine-tune the model $S$ times ($s=1,\ldots,S$). The model is optimized to minimize the cros-entropy loss over $\mathcal{V}^{(n,r)}_{\text{train}}$, and performance is monitored on $\mathcal{V}_{\text{val}}$ after each epoch. The last checkpoint is then evaluated on $\mathcal{V}_{\text{test}}$. This approach allows decomposition of variance into: (i) training variability conditioned on a fixed image combination (within $(n,r)$) and (ii) variability across different image combinations between runs $r$.
@@ -288,6 +287,15 @@ In this work we set $R=5$ and $S=3$. The sample size sequences $\mathcal{N}$ are
 Additionally, we enforce reproducibility via a two-level seeding scheme: a deterministic seed derived from $(n,r)$ defines each training subset, which is then reused across $S$ stochastic repetitions differing only by a repetition seed
 
 
+\subsection{Training from scratch on natural datasets}
+
+In this stage we establish the baseline by training models directly on DRIVE and VessMAP without any synthetic pretraining. We denote these models U-Net18 and U-Net50, and the protocol mirrors, point by point, the fine-tuning procedure. The only structural difference relative to the previous protocol is the lack of VessShape-pretrained weights, which exposes the network to a noisier initial phase and one potentially more dependent on texture.
+
+We do not define a zero-shot case for U-Net models because there is no useful prior state before observing at least one labeled image, thus the learning curve starts at $n=1$. The few-shot curves and the full-sample regime allow us to quantify: (i) the absolute gain provided by the shape bias acquired via VessShape; (ii) the difference in convergence speed as $n$ increases. In this way, the VSUNet versus U-Net comparison isolates the effect of shape bias while keeping all other factors controlled.
+
+
+\section{Results}
+\label{s:results}
 
 \begin{table}[t]
     \caption{Performance of VSUNet variants after pretraining on VessShape.}
@@ -311,15 +319,10 @@ Additionally, we enforce reproducibility via a two-level seeding scheme: a deter
     \endgroup
 \end{table}
 
-\subsection{Training from scratch on natural datasets}
-
-\section{Results}
-\label{s:results}
-
 \begin{figure*}[tbp]
     \centering
     \includegraphics[width=\textwidth]{figures/results/results_charts.pdf}
-    \caption{??.}
+    \caption{Few-shot and zero-shot Dice performance on (a) DRIVE and (b) VessMAP. Curves show the mean Dice over $R{=}5$ runs and $S{=}3$ repetitions for each sample size $n$; VessShape pretraining provides strong zero-shot ability for VessMAP, and faster saturation compared to training from scratch for both datasets. VSUNet variants outperform U-Net baselines at all cenarios, especially in the low-sample regime. The performance gap narrows at larger $n$ but remains non‑zero, indicating a persistent benefit from the learned shape bias.}
     \label{f:results_charts}
 \end{figure*}
 
@@ -335,7 +338,6 @@ Additionally, we enforce reproducibility via a two-level seeding scheme: a deter
 
 
 % TODO:
-% Adicionar a comparação de segmentação do VessMap e DRIVE para 0-shot, 1-shot e max-shot
 % Argumentar que o nosso modelo é capaz de segmentar em zero-shot a forma do vaso, mesmo para VessMap que tem vasos com intensidade mais alta (branco), e DRIVE, com vasos com intensidade mais baixa(preto). 
 
 % TODO: Testar trocando o número de exemplos como colunas, usando só o DICE. 
