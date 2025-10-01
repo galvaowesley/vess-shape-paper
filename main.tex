@@ -297,6 +297,30 @@ We do not define a zero-shot case for U-Net models because there is no useful pr
 \section{Results}
 \label{s:results}
 
+For the presentation of the results, we conducted a quantitative analysis based on the models' performance curves as a function of the number of annotated examples, shown in Figure~\ref{f:results_charts} and Table~\ref{tab:combined_fewshot}. For this, we chose the Dice score as the main metric, which is widely used in medical segmentation tasks and also helps to evaluate the quality of segmentation continuity, which is relevant for this work that seeks to understand the impact of shape bias from tubular structures.
+
+This analysis is then complemented by a qualitative evaluation of the generated segmentations, illustrating the differences between the models and the impact of the shape bias, as shown in Figure~\ref{f:results_fewshots_drive}. The results collectively demonstrate the effectiveness of pre-training with VessShape in instilling a strong shape bias, resulting in generalization capability and good segmentation quality in a low-sample regime.
+
+The learning curves in Figure \ref{f:results_charts} reveal behavioral differences in training between the VSUNet model variants and the models trained from scratch (U-Net). In both datasets, the VSUNet models start with a significant advantage in the few-shot regime, reaching a difference of 7 to 10 percentage points in the Dice score for n=1. Furthermore, the curves of the pre-trained models rise more quickly and also stabilize faster. In contrast, the curves of the U-Net models show a slower and more prolonged learning phase. This difference is also accentuated when analyzing the variance, which tends to be lower for the VSUNet models. In the full-sample regime, with the maximum n, the difference between the models decreases but remains non-zero, indicating that the shape bias acquired from VessShape continues to offer benefits even with more labeled data available.
+
+\begin{figure*}[tbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/results/results_charts.pdf}
+    \caption{Few-shot and zero-shot Dice performance on (a) DRIVE and (b) VessMAP. Curves show the mean Dice over $R{=}5$ runs and $S{=}3$ repetitions for each sample size $n$; VessShape pretraining provides strong zero-shot ability for VessMAP, and faster saturation compared to training from scratch for both datasets. VSUNet variants outperform U-Net baselines at all cenarios, especially in the low-sample regime. The performance gap narrows at larger $n$ but remains non‑zero, indicating a persistent benefit from the learned shape bias.}
+    \label{f:results_charts}
+\end{figure*}
+
+A counterintuitive phenomenon occurs in Figure \ref{f:results_charts}(b) for VessMAP, where the performance of the VSUNet models decreases when moving from zero-shot to 1-shot, before recovering and surpassing the zero-shot performance with more samples. This behavior can be attributed to a phenomenon known as \emph{catastrophic forgetting} \cite{MCCLOSKEY1989109}, where fine-tuning on a small dataset can lead the model to forget part of the previously acquired knowledge. However, as more data is introduced, the model is able to recover and even improve its performance, suggesting that the initially learned shape bias is robust and can be reinforced with additional data.
+
+This behavior has also been documented in large-scale models like CLIP \cite{Radford2021LearningTV}, where the zero-shot approach benefits from a direct specification of the concept by communicating a rule, whereas the 1-shot approach must infer the concept from a potentially ambiguous and noisy example. In our case, the pre-trained shape prior acts as the communicated rule to the model. When fine-tuning is performed with a single sample, the model is forced to optimize its weights based on an extremely limited dataset. This leads to overfitting, as instead of learning only the relevant features of the new domain, the model tends to memorize specific details of that single example, such as its particular noise and texture pattern.
+
+This overfitting to a single instance contaminates the general and robust knowledge about shapes that the model possessed, causing the performance drop. As more examples are introduced, the model is exposed to a greater variety of patterns from the domain, which prevents it from overfitting to the specific details of a single sample. This allows the model to recover and even improve its performance, as it can now reinforce the initially learned shape bias with additional data, leading to more effective generalization.
+
+On the other hand, this phenomenon is not observed in the DRIVE dataset. This suggests that the initial shape prior is not as well-aligned with the DRIVE domain. Thus, the first training sample provides new and valuable information that helps the model adjust its weights in a beneficial way, rather than causing overfitting. Similarly, the model also benefits from more examples, as demonstrated in Figure \ref{f:results_charts}(a).
+
+%TODO: Discutir a avaliação qualitativa da imagem, a diferença entre VSUNet18 e 50, e as limitações do trabalho. 
+% TODO: Argumentar que o nosso modelo é capaz de segmentar em zero-shot a forma do vaso, mesmo para VessMap que tem vasos com intensidade mais alta (branco), e DRIVE, com vasos com intensidade mais baixa(preto). 
+
 \begin{table}[t]
     \caption{Performance of VSUNet variants after pretraining on VessShape.}
     \label{tab:vessshape_results}
@@ -319,12 +343,7 @@ We do not define a zero-shot case for U-Net models because there is no useful pr
     \endgroup
 \end{table}
 
-\begin{figure*}[tbp]
-    \centering
-    \includegraphics[width=\textwidth]{figures/results/results_charts.pdf}
-    \caption{Few-shot and zero-shot Dice performance on (a) DRIVE and (b) VessMAP. Curves show the mean Dice over $R{=}5$ runs and $S{=}3$ repetitions for each sample size $n$; VessShape pretraining provides strong zero-shot ability for VessMAP, and faster saturation compared to training from scratch for both datasets. VSUNet variants outperform U-Net baselines at all cenarios, especially in the low-sample regime. The performance gap narrows at larger $n$ but remains non‑zero, indicating a persistent benefit from the learned shape bias.}
-    \label{f:results_charts}
-\end{figure*}
+
 
 
 \begin{figure*}[tbp]
@@ -335,10 +354,6 @@ We do not define a zero-shot case for U-Net models because there is no useful pr
 \end{figure*}
 
 
-
-
-% TODO:
-% Argumentar que o nosso modelo é capaz de segmentar em zero-shot a forma do vaso, mesmo para VessMap que tem vasos com intensidade mais alta (branco), e DRIVE, com vasos com intensidade mais baixa(preto). 
 
 % TODO: Testar trocando o número de exemplos como colunas, usando só o DICE. 
 \begin{table*}[t]
