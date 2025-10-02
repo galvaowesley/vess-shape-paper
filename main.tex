@@ -268,6 +268,28 @@ We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to a
     \endgroup
 \end{table}
 
+\begin{table}[t]
+    \caption{Performance of VSUNet variants after pretraining on VessShape.}
+    \label{tab:vessshape_results}
+    \centering
+    \begingroup
+    \small
+    \setlength{\tabcolsep}{6pt}
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabular}{l r r}
+        \hline
+        	\textbf{Metric} & \textbf{VSUNet50} & \textbf{VSUNet18} \\
+        \hline
+        Dice & $0.861 \,\pm\, 0.022$ & $0.859 \,\pm\, 0.077$ \\
+        Acc & $0.960 \,\pm\, 0.008$ & $0.956 \,\pm\, 0.037$ \\
+        IoU & $0.758 \,\pm\, 0.032$ & $0.761 \,\pm\, 0.096$ \\
+        Prec & $0.780 \,\pm\, 0.037$ & $0.774 \,\pm\, 0.096$ \\
+        Rec & $0.964 \,\pm\, 0.012$ & $0.974 \,\pm\, 0.018$ \\
+        \hline
+    \end{tabular}
+    \endgroup
+\end{table}
+
 \subsection{Fine-tuning}
 
 We developed a systematic fine-tuning protocol\footnote{Code (VessShape pretraining + few-shot fine-tuning): \url{https://github.com/galvaowesley/vess-shape-experiments} } for few-shot training applicable to any 2D blood vessel dataset, but here applied to DRIVE and VessMAP. The goal is to quantify performance gains as the number of labeled examples used for adaptation increases. For the VSUNet variants, we always start from VessShape-pretrained weights.
@@ -296,8 +318,36 @@ We do not define a zero-shot case for U-Net models because there is no useful pr
 \section{Results}
 \label{s:results}
 
-We conducted a quantitative analysis based on the models' performance curves as a function of the number of annotated examples, shown in Figure~\ref{f:results_charts}. We chose the Dice score as the main evaluation metric, which is widely used in medical segmentation tasks.
+We conducted a quantitative analysis based on the models' performance curves as a function of the number of annotated examples, shown in Figure~\ref{f:results_charts}. We chose the Dice score as the main evaluation metric, which is widely used in medical segmentation tasks. The Table \ref{tab:combined_fewshot_dice_models} summarizes the Dice scores for zero-shot and few-shot segmentation on DRIVE and VessMAP over repeated runs.
 %and also helps to evaluate the quality of segmentation continuity, which is relevant for this work that seeks to understand the impact of shape bias from tubular structures.
+
+
+\begin{table*}[t]
+    \caption{Dice (mean $\pm$ std) over repeated runs for zero-shot and few-shot and segmentation on DRIVE. Zero-shot only applies to VSUNet variants.}
+    \label{tab:combined_fewshot_dice_models}
+    \centering
+    \begingroup
+    \small
+    \setlength{\tabcolsep}{6pt}
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabular}{l r r r r r}
+        \hline
+        \textbf{Dataset} & \textbf{\#Examples} & \textbf{VSUNet18} & \textbf{VSUNet50} & \textbf{UNet18} & \textbf{UNet50} \\
+        \hline
+        \multirow{3}{*}{DRIVE}
+            & 0  & $0.656 \,\pm\, 0.000$ & $0.367 \,\pm\, 0.000$ & --- & --- \\
+            & 1  & $0.759 \,\pm\, 0.007$ & $0.757 \,\pm\, 0.013$ & $0.682 \,\pm\, 0.054$ & $0.681 \,\pm\, 0.046$ \\
+            & 16 & $0.794 \,\pm\, 0.000$ & $0.799 \,\pm\, 0.001$ & $0.785 \,\pm\, 0.003$ & $0.788 \,\pm\, 0.002$ \\
+        \hline
+        \multirow{3}{*}{VessMAP}
+            & 0  & $0.757 \,\pm\, 0.000$ & $0.614 \,\pm\, 0.000$ & --- & --- \\
+            & 1  & $0.589 \,\pm\, 0.080$ & $0.569 \,\pm\, 0.063$ & $0.488 \,\pm\, 0.027$ & $0.466 \,\pm\, 0.020$ \\
+            & 20 & $0.843 \,\pm\, 0.013$ & $0.837 \,\pm\, 0.020$ & $0.769 \,\pm\, 0.062$ & $0.776 \,\pm\, 0.037$ \\
+        \hline
+    \end{tabular}
+    \endgroup
+\end{table*}
+
 
 The performance curves in Figure \ref{f:results_charts} reveal behavioral differences in training between the VSUNet model variants and the models trained from scratch (U-Net). In both datasets, the VSUNet models start with a significant advantage in the few-shot regime, reaching a difference of 7 to 10 percentage points in Dice score when training with a single sample. Furthermore, the curves of the pre-trained models rise more quickly and also converge faster. In contrast, the curves of the U-Net models show a slower and more prolonged learning phase. This difference is also accentuated when analyzing the variance of the training runs, which tends to be lower for the VSUNet models. In the full-sample regime, when all samples are used, the Dice scores become more similar, but a difference between the models remains, indicating that the shape bias acquired from VessShape continues to offer benefits even with more labeled data available.
 
@@ -316,46 +366,25 @@ However, this phenomenon is not observed in the DRIVE dataset. This suggests tha
 
 This analysis is then complemented by a qualitative evaluation of the generated segmentations, illustrating the differences between the models and the impact of the shape bias, as shown in Figure~\ref{f:results_fewshots_drive}. The results collectively demonstrate the effectiveness of pre-training with VessShape in instilling a strong shape bias, resulting in generalization capability and good segmentation quality in a low-sample regime.
 
-
-
-%TODO: Discutir a avaliação qualitativa da imagem, a diferença entre VSUNet18 e 50, e as limitações do trabalho. 
-% TODO: Argumentar que o nosso modelo é capaz de segmentar em zero-shot a forma do vaso, mesmo para VessMap que tem vasos com intensidade mais alta (branco), e DRIVE, com vasos com intensidade mais baixa(preto). 
-
-\begin{table}[t]
-    \caption{Performance of VSUNet variants after pretraining on VessShape.}
-    \label{tab:vessshape_results}
-    \centering
-    \begingroup
-    \small
-    \setlength{\tabcolsep}{6pt}
-    \renewcommand{\arraystretch}{1.15}
-    \begin{tabular}{l r r}
-        \hline
-        	\textbf{Metric} & \textbf{VSUNet50} & \textbf{VSUNet18} \\
-        \hline
-        Dice & $0.861 \,\pm\, 0.022$ & $0.859 \,\pm\, 0.077$ \\
-        Acc & $0.960 \,\pm\, 0.008$ & $0.956 \,\pm\, 0.037$ \\
-        IoU & $0.758 \,\pm\, 0.032$ & $0.761 \,\pm\, 0.096$ \\
-        Prec & $0.780 \,\pm\, 0.037$ & $0.774 \,\pm\, 0.096$ \\
-        Rec & $0.964 \,\pm\, 0.012$ & $0.974 \,\pm\, 0.018$ \\
-        \hline
-    \end{tabular}
-    \endgroup
-\end{table}
-
-
-
+n the DRIVE dataset, where the region of interest highlights low-caliber vessels, performance varies sharply. In zero-shot, the VSUNet18 already delineates the main vascular structure, whereas the VSUNet50 shows significant false negatives. With just one sample, both VSUNet models adapt quickly, but the VSUNet50 now exhibits superior segmentation of the fine vessels in the highlighted region. It is also noteworthy that the U-Net variants were competent in segmenting the main structure and the region of interest with reasonable quality in the evaluated example. With 16 samples, the visual differences between all models become minimal, converging to similar results.
 
 \begin{figure*}[tbp]
     \centering
     \includegraphics[width=\textwidth]{figures/results/results_fewshots.pdf}
-    \caption{??.}
+    \caption{Qualitative visual comparison of segmentation performance on the DRIVE and VessMAP datasets. The figure contrasts the outputs of VSUNet variants against U-Net variants across different few-shot regimes: zero-shot, one-shot, and few-shot (16-shots for DRIVE and 20-shots for VessMAP). For the U-Net variants, no zero-shot output is available. Red squares highlight specific regions of interest to facilitate comparison: an area with low-caliber vessels in DRIVE and a vascular protuberance in VessMAP.}
     \label{f:results_fewshots_drive}
 \end{figure*}
 
+For VessMAP, which features a vascular protuberance as its highlight, the VSUNet models in zero-shot capture the general topology but not the morphological detail of the bulge. The 1-shot scenario confirms the predicted performance drop, with the VSUNets generating discontinuous results and the U-Nets, without prior knowledge, producing very low-quality segmentation maps. Even so, the VSUNet18 already shows an initial refinement in the protuberance region. With 20 samples, all models improve significantly, although the U-Net variants still exhibit minor continuity flaws compared to the more cohesive outputs of the VSUNet models.
+
+It is interesting to note the performance of VSUNet18, which, despite being a simpler model trained with less data, shows superior zero-shot performance compared to VSUNet50. Although VSUNet50 demonstrates specific advantages in certain few-shot scenarios, VSUNet18 remains competitive across all sampling regimes, presenting a balance between efficiency and generalization capability.
+
+Um dos resultados mais significativos é a capacidade de generalização da nossa abordagem, demonstrada pelo desempenho zero-shot dos modelos pré-treinados. A principal evidência dessa capacidade é que os modelos conseguem segmentar a forma dos vasos em domínios visualmente opostos sem qualquer treinamento específico. No VessMAP, os vasos aparecem com alta intensidade sobre um fundo escuro, enquanto no DRIVE, os vasos são escuros sobre um fundo claro, e isso fica mais evidente no modelo VSUNet18. Essa habilidade de generalização sugere que o modelo aprendeu uma representação robusta da forma dos vasos, que é aplicável independentemente das características visuais específicas do domínio.
+
+One of the most significant results is the generalization capability of our approach, demonstrated by the zero-shot performance of the pre-trained models. The main evidence of this capability is that the models can segment the shape of vessels in visually opposite domains without any specific training. In VessMAP, the vessels appear with high intensity on a dark background, whereas in DRIVE, the vessels are dark on a light background, and this is more evident in the VSUNet18 model. This generalization ability suggests that the model has learned a robust representation of vessel shape, which is applicable regardless of the specific visual characteristics of the domain.
 
 
-% TODO: Testar trocando o número de exemplos como colunas, usando só o DICE. 
+% TODO: Jogar isso para o apêndice
 \begin{table*}[t]
     \caption{Few-shot and zero-shot segmentation on VessMAP and DRIVE. Values are mean $\pm$ standard deviation over repeated runs (fine-tuning for VSUNet models and training from scratch for U-Net baselines) evaluated on each dataset test set. Zero-shot rows come from a single pretrained inference (no deviation available).}
     \label{tab:combined_fewshot}
