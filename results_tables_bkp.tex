@@ -1,0 +1,70 @@
+% TODO: Jogar isso para o apêndice
+% \begin{table*}[t]
+%     \caption{Few-shot and zero-shot segmentation on VessMAP and DRIVE. Values are mean $\pm$ standard deviation over repeated runs (fine-tuning for VSUNet models and training from scratch for U-Net baselines) evaluated on each dataset test set. Zero-shot rows come from a single pre-trained inference (no deviation available).}
+%     \label{tab:combined_fewshot}
+%     \centering
+%     \begingroup
+%     \small
+%     \setlength{\tabcolsep}{4pt}
+%     \renewcommand{\arraystretch}{1.15}
+%     % Removed AUC column; merged Dataset cells with multirow
+%     \begin{tabular}{l c l l l l l l}
+%         \hline
+%         \textbf{Dataset} & \textbf{\#Examples} & \textbf{Model} & \textbf{Dice} & \textbf{Acc} & \textbf{IoU} & \textbf{Prec} & \textbf{Rec} \\
+%         \hline
+%         \multirow{10}{*}{DRIVE} & \multirow{2}{*}{0} & VSUNet18 & $0.656 \,\pm\, 0.000$ & $0.907 \,\pm\, 0.000$ & $0.490 \,\pm\, 0.000$ & $0.629 \,\pm\, 0.000$ & $0.699 \,\pm\, 0.000$ \\
+%          &  & VSUNet50 & $0.367 \,\pm\, 0.000$ & $0.888 \,\pm\, 0.000$ & $0.230 \,\pm\, 0.000$ & $0.728 \,\pm\, 0.000$ & $0.275 \,\pm\, 0.000$ \\
+%          \cline{2-8}
+%          & \multirow{4}{*}{1} & VSUNet18 & $0.759 \,\pm\, 0.007$ & $0.941 \,\pm\, 0.002$ & $0.612 \,\pm\, 0.009$ & $0.787 \,\pm\, 0.021$ & $0.741 \,\pm\, 0.019$ \\
+%          &  & VSUNet50 & $0.757 \,\pm\, 0.013$ & $0.939 \,\pm\, 0.006$ & $0.611 \,\pm\, 0.016$ & $0.773 \,\pm\, 0.046$ & $0.754 \,\pm\, 0.039$ \\
+%          &  & UNet18 & $0.682 \,\pm\, 0.054$ & $0.919 \,\pm\, 0.016$ & $0.523 \,\pm\, 0.058$ & $0.717 \,\pm\, 0.079$ & $0.690 \,\pm\, 0.118$ \\
+%          &  & UNet50 & $0.681 \,\pm\, 0.046$ & $0.916 \,\pm\, 0.031$ & $0.523 \,\pm\, 0.050$ & $0.722 \,\pm\, 0.099$ & $0.690 \,\pm\, 0.110$ \\
+%          \cline{2-8}
+%          & \multirow{4}{*}{16} & VSUNet18 & $0.794 \,\pm\, 0.000$ & $0.950 \,\pm\, 0.000$ & $0.658 \,\pm\, 0.000$ & $0.833 \,\pm\, 0.004$ & $0.762 \,\pm\, 0.003$ \\
+%          &  & VSUNet50 & $0.799 \,\pm\, 0.001$ & $0.952 \,\pm\, 0.000$ & $0.666 \,\pm\, 0.001$ & $0.846 \,\pm\, 0.003$ & $0.762 \,\pm\, 0.004$ \\
+%          &  & UNet18 & $0.785 \,\pm\, 0.003$ & $0.946 \,\pm\, 0.001$ & $0.647 \,\pm\, 0.004$ & $0.795 \,\pm\, 0.005$ & $0.781 \,\pm\, 0.004$ \\
+%          &  & UNet50 & $0.788 \,\pm\, 0.002$ & $0.947 \,\pm\, 0.001$ & $0.650 \,\pm\, 0.002$ & $0.807 \,\pm\, 0.006$ & $0.774 \,\pm\, 0.004$ \\
+%         \hline
+%         \multirow{10}{*}{VessMAP} & \multirow{2}{*}{0} & VSUNet18 & $0.757 \,\pm\, 0.000$ & $0.886 \,\pm\, 0.000$ & $0.616 \,\pm\, 0.000$ & $0.846 \,\pm\, 0.000$ & $0.696 \,\pm\, 0.000$ \\
+%          &  & VSUNet50 & $0.614 \,\pm\, 0.000$ & $0.817 \,\pm\, 0.000$ & $0.472 \,\pm\, 0.000$ & $0.746 \,\pm\, 0.000$ & $0.605 \,\pm\, 0.000$ \\
+%          \cline{2-8}
+%          & \multirow{4}{*}{1} & VSUNet18 & $0.589 \,\pm\, 0.080$ & $0.705 \,\pm\, 0.205$ & $0.455 \,\pm\, 0.088$ & $0.675 \,\pm\, 0.205$ & $0.738 \,\pm\, 0.148$ \\
+%          &  & VSUNet50 & $0.569 \,\pm\, 0.063$ & $0.708 \,\pm\, 0.203$ & $0.439 \,\pm\, 0.071$ & $0.683 \,\pm\, 0.208$ & $0.700 \,\pm\, 0.167$ \\
+%          &  & UNet18 & $0.488 \,\pm\, 0.027$ & $0.674 \,\pm\, 0.184$ & $0.362 \,\pm\, 0.032$ & $0.682 \,\pm\, 0.204$ & $0.622 \,\pm\, 0.210$ \\
+%          &  & UNet50 & $0.466 \,\pm\, 0.020$ & $0.665 \,\pm\, 0.181$ & $0.343 \,\pm\, 0.025$ & $0.674 \,\pm\, 0.206$ & $0.604 \,\pm\, 0.215$ \\
+%          \cline{2-8}
+%          & \multirow{4}{*}{20} & VSUNet18 & $0.843 \,\pm\, 0.013$ & $0.901 \,\pm\, 0.021$ & $0.739 \,\pm\, 0.018$ & $0.825 \,\pm\, 0.049$ & $0.888 \,\pm\, 0.048$ \\
+%          &  & VSUNet50 & $0.837 \,\pm\, 0.020$ & $0.905 \,\pm\, 0.025$ & $0.732 \,\pm\, 0.026$ & $0.851 \,\pm\, 0.032$ & $0.850 \,\pm\, 0.027$ \\
+%          &  & UNet18 & $0.769 \,\pm\, 0.062$ & $0.880 \,\pm\, 0.034$ & $0.645 \,\pm\, 0.075$ & $0.864 \,\pm\, 0.045$ & $0.737 \,\pm\, 0.094$ \\
+%          &  & UNet50 & $0.776 \,\pm\, 0.037$ & $0.880 \,\pm\, 0.035$ & $0.653 \,\pm\, 0.046$ & $0.855 \,\pm\, 0.041$ & $0.752 \,\pm\, 0.051$ \\
+%         \hline
+%     \end{tabular}
+%     \endgroup
+% \end{table*}
+
+
+% \begin{table*}[t]
+%     \caption{Dice (mean $\pm$ std) over repeated runs for zero-shot and few-shot segmentation on DRIVE. Zero-shot only applies to VSUNet variants. Bold values indicate the best performance for a given number of training samples.}
+%     \label{tab:combined_fewshot_dice_models}
+%     \centering
+%     \begingroup
+%     \small
+%     \setlength{\tabcolsep}{6pt}
+%     \renewcommand{\arraystretch}{1.15}
+%     \begin{tabular}{l r r r r r}
+%         \hline
+%         \textbf{Dataset} & \textbf{\#Samples} & \textbf{VSUNet18} & \textbf{VSUNet50} & \textbf{UNet18} & \textbf{UNet50} \\
+%         \hline
+%         \multirow{3}{*}{DRIVE}
+%             & 0  & $\textbf{0.656} \,\pm\, 0.000$ & $0.367 \,\pm\, 0.000$ & --- & --- \\
+%             & 1  & $\textbf{0.759} \,\pm\, 0.007$ & $0.757 \,\pm\, 0.013$ & $0.682 \,\pm\, 0.054$ & $0.681 \,\pm\, 0.046$ \\
+%             & 16 & $0.794 \,\pm\, 0.000$ & $\textbf{0.799} \,\pm\, 0.001$ & $0.785 \,\pm\, 0.003$ & $0.788 \,\pm\, 0.002$ \\
+%         \hline
+%         \multirow{3}{*}{VessMAP}
+%             & 0  & $\textbf{0.757} \,\pm\, 0.000$ & $0.614 \,\pm\, 0.000$ & --- & --- \\
+%             & 1  & $\textbf{0.589} \,\pm\, 0.080$ & $0.569 \,\pm\, 0.063$ & $0.488 \,\pm\, 0.027$ & $0.466 \,\pm\, 0.020$ \\
+%             & 20 & $\textbf{0.843} \,\pm\, 0.013$ & $0.837 \,\pm\, 0.020$ & $0.769 \,\pm\, 0.062$ & $0.776 \,\pm\, 0.037$ \\
+%         \hline
+%     \end{tabular}
+%     \endgroup 
+% \end{table*}
