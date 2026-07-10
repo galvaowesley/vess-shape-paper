@@ -62,7 +62,6 @@ longbibliography
 \renewcommand\frontmatter@abstractwidth{\dimexpr0.9\textwidth\relax}
 \makeatother
 
-
 % \bibliographystyle{apsrev4-1}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
@@ -84,7 +83,6 @@ longbibliography
 
 \newcommand{\sm}{\scalebox{0.5}[1.0]{\( - \)}}
 
-
 %VER
 \makeatletter
 \renewcommand\subparagraph{\@startsection{subparagraph}{5}{\parindent}%
@@ -97,8 +95,6 @@ longbibliography
 %
 \preprint{1}
 
-
-
 \title{VessShape: Few-shot 2D blood vessel segmentation by leveraging shape priors from synthetic images}
 %VessShape: Few-shot blood vessel segmentation using shape priors from synthetic data
 %VessShape: Adding shape priors to neural networks for few-shot blood vessel segmentation
@@ -106,7 +102,6 @@ longbibliography
 \author{Wesley N. Galvão}
 \email[]{wesleygalvao@estudante.ufscar.br}
 \affiliation{Department of Computer Science, Federal University of S\~ao Carlos, S\~ao Carlos, SP, Brazil}
-
 
 \author{Cesar H. Comin}
 \email[Corresponding author: ]{comin@ufscar.br}
@@ -165,8 +160,6 @@ Regarding generative models, most works in the literature use Generative Adversa
 
 The main drawback of the aforementioned works is that the network is trained to reproduce the shape and texture of blood vessels in specific datasets. Changes in the texture of the vessels due to diseases or modifications in the imaging device can lead to low segmentation performance. In addition, models must be trained for specific imaging modalities, even if annotated data are scarce. Our approach aims at training neural networks to segment any vascular tissue that follows the shape priors acquired from VessShape.
 
-
-
 \section{Methodology}
 \label{s:methodology}
 
@@ -213,13 +206,19 @@ This blending operation ensures that vessel regions ($A \approx 1$) preserve the
 
 The parameter $\sigma$ controls the smoothness of the vessel boundaries. Examples of generated masks and images are shown in Figure~\ref{f:vessshape_sample}.
 
-
 \begin{figure}[tbp]
     \centering
     \includegraphics[width=\columnwidth]{figures/results/vessshape_sample.pdf}
     \caption{Examples of the VessShape generation process. Textures are sampled from ImageNet and blended according to procedurally generated binary masks to create the final VessShape images.}
     \label{f:vessshape_sample}
 \end{figure}
+
+\begin{figure*}[tbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/vessshape_generation.pdf}
+    \caption{Overview of the VessShape generation pipeline. \textbf{Curve generation} (top row): two endpoints are sampled in the image domain; a set of intermediate control points is added along the connecting line and perturbed to introduce tortuosity; a B\'ezier curve is fitted to these points, rasterized into a 1-pixel-thick polyline, and finally dilated with a disk-shaped structuring element of radius $r_0$ to assign a tubular thickness, producing the binary mask $M$. \textbf{Texturing} (bottom row): a foreground (curve) texture and a background texture are drawn from two different ImageNet classes; an alpha matte is obtained by smoothing $M$ with a Gaussian filter of standard deviation $\sigma$, and the textures are blended following Eq.~\ref{eq:compose} to yield the final VessShape image. The rightmost panel shows the result without Gaussian smoothing ($\sigma \to 0$), which produces hard vessel boundaries.}
+    \label{f:vessshape_generation}
+\end{figure*}
 
 \subsection{Real-world data for validation}
 
@@ -229,8 +228,8 @@ The two datasets originate from fundamentally different imaging modalities, resu
 
 \begin{figure}[tbp]
     \centering
-    \includegraphics[width=\columnwidth]{figures/results/drive_vessmap_samples.pdf}
-    \caption{Samples from the DRIVE and VessMAP datasets and their respective ground-truth masks.}
+    \includegraphics[width=\columnwidth]{figures/dataset_sample.pdf}
+    \caption{Samples from the DRIVE, OCTA2D, DCA1 and VessMAP datasets and their respective ground-truth masks.}
     \label{f:drive_vessmap_samples}
 \end{figure}
 
@@ -246,25 +245,31 @@ The pre-training on VessShape aims to expose the model to a wide variety of tubu
 
 We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to as VSUNet18 and VSUNet50. VSUNet18 was trained on approximately 7.1 million synthetic images over 8.6 hours, while VSUNet50 was trained on approximately 53.0 million images over 78.3 hours. Channel-wise normalization with ImageNet statistics was used for all input images. For evaluation during this stage, we used pre-generated validation and test sets from VessShape, containing 9,000 and 200 images, respectively. Table \ref{tab:vs_hparams} lists the hyperparameters used. Table~\ref{tab:vessshape_results_percent} summarizes the training performance on VessShape. All pre-training runs were executed on a workstation with 24 logical CPU cores and a single NVIDIA GeForce RTX 3090 GPU.
 
-\begin{table}[t]
-    \caption{Pre-training hyperparameters used for the VessShape dataset.}
+\begin{table*}[t]
+    \caption{Hyperparameters for both training stages. Pre-training is performed once on VessShape (only the VSUNet variants; IN-UNet and LiteMedSAM start from ImageNet and MedSAM weights, respectively). Fine-tuning is then applied on each target dataset, using the same protocol as training from scratch (but without the pre-trained weights). The input ``gray$^{\dagger}$'' uses a per-dataset resize, while LiteMedSAM-FT always uses RGB $256{\times}256$. All runs use the Adam optimizer.}
     \label{tab:vs_hparams}
+    \label{tab:finetune_hparams}
     \centering
     \begingroup
     \small
     \setlength{\tabcolsep}{6pt}
-    \renewcommand{\arraystretch}{1.15}
-    \begin{tabular}{l l l}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{l l l l r l l}
         \hline
-        	\textbf{Hyperparameter} & \textbf{VSUNet50} & \textbf{VSUNet18} \\
+        \textbf{Stage} & \textbf{Model} & \textbf{Input} & \textbf{Loss} & \textbf{Batch} & \textbf{LR} & \textbf{Weight decay} \\
         \hline
-        Batch size & 96 & 192 \\
-        Learning rate & $10^{-3}$ & $10^{-2}$ \\
-        Weight decay & $10^{-4}$ & 0.0 \\
+        \multirow{2}{*}{Pre-training (VessShape)} & VSUNet18 & RGB & Cross-entropy & 192 & $10^{-2}$ & 0.0 \\
+         & VSUNet50 & RGB & Cross-entropy & 96 & $10^{-3}$ & $10^{-4}$ \\
+        \hline
+        \multirow{3}{*}{Fine-tuning (target datasets)} & VSUNet18 / IN-UNet18 & gray$^{\dagger}$ & Cross-entropy & 8 & $10^{-2}$ & 0.0 \\
+         & VSUNet50 / IN-UNet50 & gray$^{\dagger}$ & Cross-entropy & 8 & $10^{-3}$ & 0.0 \\
+         & LiteMedSAM-FT & RGB $256{\times}256$ & BCE & 8 & $10^{-3}$ & 0.0 \\
         \hline
     \end{tabular}
     \endgroup
-\end{table}
+    \\[3pt]
+    {\footnotesize $^{\dagger}$ Resize per dataset: DRIVE $512{\times}512$, OCTA2D $384{\times}384$, DCA1 $288{\times}288$, VessMAP $256{\times}256$.}
+\end{table*}
 
 \begin{table}[t]
     \caption{Performance of VSUNet variants after pre-training on the VessShape dataset. Values, presented in percentages, are the mean $\pm$ standard deviation evaluated on the fixed VessShape test set.}
@@ -288,8 +293,6 @@ We pre-train two U-Net models with ResNet18 and ResNet50 encoders, referred to a
     \endgroup
 \end{table}
 
-
-
 \subsection{Fine-tuning}
 
 We developed a systematic fine-tuning protocol\footnote{Code (VessShape pre-training + few-shot fine-tuning): \url{https://github.com/galvaowesley/vess-shape-experiments} } for few-shot training on 2D blood vessel datasets, which we apply here to DRIVE and VessMAP. The goal is to quantify performance gains as the number of labeled examples used for adaptation increases. For the VSUNet variants, we always start from the weights pre-trained on VessShape.
@@ -307,6 +310,12 @@ Each subset $\mathcal{V}^{(n,r)}_{\text{train}}$ is used to fine-tune the model 
 
 In this work, we set $R=5$ and $S=3$. The sample size sequences $\mathcal{N}$ are $\{1,2,4,6,8,10, 12, 14, 16\}$ for DRIVE and $\{1,2,4,6,8,10, 12, 14, 16,18,20\}$ for VessMAP. We also consider the zero-shot case ($n=0$), in which the pre-trained model is evaluated directly on $\mathcal{V}_{\text{test}}$ without any adaptation on $D$. 
 
+\begin{figure*}[tbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/training_protocol.pdf}
+    \caption{Progressive-sampling protocol used for both fine-tuning (VSUNet, IN-UNet, LiteMedSAM-FT) and training from scratch (U-Net). For each sample size $n$ (zero-shot, one-shot, two-shot, \ldots, full-shot), the target training pool (green) is sampled $R$ times without replacement, and each sampled subset is used to train the model $S$ times; validation (yellow) and test (blue) sets are fixed. The zero-shot regime ($n{=}0$) evaluates the pre-trained model directly on the test set, with no target-specific training. This yields $R\times S$ result sets per $n$, allowing the variance to be decomposed into image-combination and optimization components.}
+    \label{f:training_protocol}
+\end{figure*}
 
 \subsection{Training from scratch on real-world datasets}
 
@@ -314,51 +323,40 @@ We establish a baseline by training models directly on DRIVE and VessMAP without
 
 We do not define a zero-shot case for U-Net models because there is no useful prior state before observing at least one labeled image. The few-shot curves and the full-sample regime allow us to quantify: (i) the absolute gain provided by the shape bias acquired via VessShape; (ii) the difference in convergence speed as $n$ increases. In this way, the VSUNet versus U-Net comparison isolates the effect of shape bias while keeping all other factors controlled.
 
-
 \section{Results}
 \label{s:results}
 
 We conducted a quantitative analysis based on the models' performance curves as a function of the number of annotated examples. The main results are shown in Figure~\ref{f:results_charts}. We chose the Dice score as the main evaluation metric because it is widely used in medical segmentation tasks. Table \ref{tab:combined_fewshot_percent} summarizes the Dice scores, in addition to other key segmentation metrics, for zero-shot and few-shot segmentation over repeated runs.
 
 \begin{table*}[t]
-    \caption{Few-shot and zero-shot segmentation on VessMAP and DRIVE. Values, presented in percentages, are mean $\pm$ standard deviation over repeated training runs evaluated on the test set of each dataset. Zero-shot evaluations come from a single inference and thus have zero standard deviation.}
+    \caption{Dice score (\%) for zero-shot ($n{=}0$), one-shot ($n{=}1$) and full-sample ($n{=}16$ for DRIVE, $n{=}20$ otherwise) segmentation on the four datasets. Values are mean $\pm$ standard deviation over repeated runs ($R{=}5$, $S{=}3$); zero-shot rows come from a single inference and thus have zero deviation. For $n{=}0$, the LiteMedSAM-FT column reports the un-fine-tuned LiteMedSAM. Best value per row in \textbf{bold}; ``---'' marks configurations that were not evaluated.}
     \label{tab:combined_fewshot_percent}
     \centering
     \begingroup
     \small
     \setlength{\tabcolsep}{4pt}
     \renewcommand{\arraystretch}{1.15}
-    \begin{tabular}{l c l l l l l l}
-        \hline
-        \textbf{Dataset} & \textbf{\#Examples} & \textbf{Model} & \textbf{Dice} & \textbf{Acc} & \textbf{IoU} & \textbf{Prec} & \textbf{Rec} \\
-        \hline
-        \multirow{10}{*}{DRIVE} & \multirow{2}{*}{0} & VSUNet18 & $\mathbf{65.6} \,\pm\, 0.0$ & $90.7 \,\pm\, 0.0$ & $49.0 \,\pm\, 0.0$ & $62.9 \,\pm\, 0.0$ & $69.9 \,\pm\, 0.0$ \\
-         &  & VSUNet50 & $36.7 \,\pm\, 0.0$ & $88.8 \,\pm\, 0.0$ & $23.0 \,\pm\, 0.0$ & $72.8 \,\pm\, 0.0$ & $27.5 \,\pm\, 0.0$ \\
-         \cline{2-8}
-         & \multirow{4}{*}{1} & VSUNet18 & $\mathbf{75.9} \,\pm\, 0.7$ & $94.1 \,\pm\, 0.2$ & $61.2 \,\pm\, 0.9$ & $78.7 \,\pm\, 2.1$ & $74.1 \,\pm\, 1.9$ \\
-         &  & VSUNet50 & $75.7 \,\pm\, 1.3$ & $93.9 \,\pm\, 0.6$ & $61.1 \,\pm\, 1.6$ & $77.3 \,\pm\, 4.6$ & $75.4 \,\pm\, 3.9$ \\
-         &  & UNet18 & $68.2 \,\pm\, 5.4$ & $91.9 \,\pm\, 1.6$ & $52.3 \,\pm\, 5.8$ & $71.7 \,\pm\, 7.9$ & $69.0 \,\pm\, 11.8$ \\
-         &  & UNet50 & $68.1 \,\pm\, 4.6$ & $91.6 \,\pm\, 3.1$ & $52.3 \,\pm\, 5.0$ & $72.2 \,\pm\, 9.9$ & $69.0 \,\pm\, 11.0$ \\
-         \cline{2-8}
-         & \multirow{4}{*}{16} & VSUNet18 & $79.4 \,\pm\, 0.0$ & $95.0 \,\pm\, 0.0$ & $65.8 \,\pm\, 0.0$ & $83.3 \,\pm\, 0.4$ & $76.2 \,\pm\, 0.3$ \\
-         &  & VSUNet50 & $\mathbf{79.9} \,\pm\, 0.1$ & $95.2 \,\pm\, 0.0$ & $66.6 \,\pm\, 0.1$ & $84.6 \,\pm\, 0.3$ & $76.2 \,\pm\, 0.4$ \\
-         &  & UNet18 & $78.5 \,\pm\, 0.3$ & $94.6 \,\pm\, 0.1$ & $64.7 \,\pm\, 0.4$ & $79.5 \,\pm\, 0.5$ & $78.1 \,\pm\, 0.4$ \\
-         &  & UNet50 & $78.8 \,\pm\, 0.2$ & $94.7 \,\pm\, 0.1$ & $65.0 \,\pm\, 0.2$ & $80.7 \,\pm\, 0.6$ & $77.4 \,\pm\, 0.4$ \\
-        \hline
-        \multirow{10}{*}{VessMAP} & \multirow{2}{*}{0} & VSUNet18 & $\mathbf{75.7} \,\pm\, 0.0$ & $88.6 \,\pm\, 0.0$ & $61.6 \,\pm\, 0.0$ & $84.6 \,\pm\, 0.0$ & $69.6 \,\pm\, 0.0$ \\
-         &  & VSUNet50 & $61.4 \,\pm\, 0.0$ & $81.7 \,\pm\, 0.0$ & $47.2 \,\pm\, 0.0$ & $74.6 \,\pm\, 0.0$ & $60.5 \,\pm\, 0.0$ \\
-         \cline{2-8}
-         & \multirow{4}{*}{1} & VSUNet18 & $\mathbf{58.9} \,\pm\, 8.0$ & $70.5 \,\pm\, 20.5$ & $45.5 \,\pm\, 8.8$ & $67.5 \,\pm\, 20.5$ & $73.8 \,\pm\, 14.8$ \\
-         &  & VSUNet50 & $56.9 \,\pm\, 6.3$ & $70.8 \,\pm\, 20.3$ & $43.9 \,\pm\, 7.1$ & $68.3 \,\pm\, 20.8$ & $70.0 \,\pm\, 16.7$ \\
-         &  & UNet18 & $48.8 \,\pm\, 2.7$ & $67.4 \,\pm\, 18.4$ & $36.2 \,\pm\, 3.2$ & $68.2 \,\pm\, 20.4$ & $62.2 \,\pm\, 21.0$ \\
-         &  & UNet50 & $46.6 \,\pm\, 2.0$ & $66.5 \,\pm\, 18.1$ & $34.3 \,\pm\, 2.5$ & $67.4 \,\pm\, 20.6$ & $60.4 \,\pm\, 21.5$ \\
-         \cline{2-8}
-         & \multirow{4}{*}{20} & VSUNet18 & $\mathbf{84.3} \,\pm\, 1.3$ & $90.1 \,\pm\, 2.1$ & $73.9 \,\pm\, 1.8$ & $82.5 \,\pm\, 4.9$ & $88.8 \,\pm\, 4.8$ \\
-         &  & VSUNet50 & $83.7 \,\pm\, 2.0$ & $90.5 \,\pm\, 2.5$ & $73.2 \,\pm\, 2.6$ & $85.1 \,\pm\, 3.2$ & $85.0 \,\pm\, 2.7$ \\
-         &  & UNet18 & $76.9 \,\pm\, 6.2$ & $88.0 \,\pm\, 3.4$ & $64.5 \,\pm\, 7.5$ & $86.4 \,\pm\, 4.5$ & $73.7 \,\pm\, 9.4$ \\
-         &  & UNet50 & $77.6 \,\pm\, 3.7$ & $88.0 \,\pm\, 3.5$ & $65.3 \,\pm\, 4.6$ & $85.5 \,\pm\, 4.1$ & $75.2 \,\pm\, 5.1$ \\
-        \hline
-    \end{tabular}
+\begin{tabular}{l r r r r r r r r }
+\hline
+\textbf{Dataset} & \textbf{N} & \textbf{VSUNet18} & \textbf{VSUNet50} & \textbf{IN-UNet18} & \textbf{IN-UNet50} & \textbf{LiteMedSAM-FT} & \textbf{UNet18} & \textbf{UNet50} \\
+\hline
+\multirow{3}{*}{DRIVE} & 0 & $\mathbf{55.3} \,\pm\, 0.0$ & $17.5 \,\pm\, 0.0$ & $17.2 \,\pm\, 0.0$ & $22.6 \,\pm\, 0.0$ & $0.0 \,\pm\, 0.0$ & --- & --- \\
+ & 1 & $\mathbf{76.1} \,\pm\, 0.7$ & $75.3 \,\pm\, 1.5$ & $72.0 \,\pm\, 3.5$ & $73.5 \,\pm\, 2.7$ & $66.5 \,\pm\, 7.5$ & $65.8 \,\pm\, 9.5$ & $68.4 \,\pm\, 4.6$ \\
+ & 16 & $79.7 \,\pm\, 0.1$ & $\mathbf{79.9} \,\pm\, 0.1$ & $79.4 \,\pm\, 0.3$ & $79.2 \,\pm\, 0.1$ & $78.4 \,\pm\, 0.2$ & --- & --- \\
+\hline
+\multirow{3}{*}{OCTA2D} & 0 & $27.2 \,\pm\, 0.0$ & $\mathbf{47.0} \,\pm\, 0.0$ & $13.8 \,\pm\, 0.0$ & $15.1 \,\pm\, 0.0$ & $0.0 \,\pm\, 0.0$ & --- & --- \\
+ & 1 & $80.4 \,\pm\, 2.1$ & $\mathbf{80.5} \,\pm\, 2.1$ & $80.0 \,\pm\, 2.2$ & $80.2 \,\pm\, 3.0$ & $78.7 \,\pm\, 4.1$ & $78.0 \,\pm\, 4.2$ & $79.6 \,\pm\, 2.6$ \\
+ & 20 & $\mathbf{87.1} \,\pm\, 0.3$ & $85.7 \,\pm\, 0.2$ & $86.5 \,\pm\, 0.2$ & $85.9 \,\pm\, 0.2$ & $86.2 \,\pm\, 0.4$ & $87.0 \,\pm\, 0.6$ & $86.4 \,\pm\, 0.3$ \\
+\hline
+\multirow{3}{*}{DCA1} & 0 & $\mathbf{53.6} \,\pm\, 0.0$ & $48.0 \,\pm\, 0.0$ & $5.5 \,\pm\, 0.0$ & $9.2 \,\pm\, 0.0$ & $0.9 \,\pm\, 0.0$ & --- & --- \\
+ & 1 & $\mathbf{54.7} \,\pm\, 7.9$ & $46.8 \,\pm\, 12.3$ & $30.5 \,\pm\, 16.1$ & $45.6 \,\pm\, 12.3$ & $50.9 \,\pm\, 12.1$ & --- & --- \\
+ & 20 & $76.7 \,\pm\, 1.3$ & $75.6 \,\pm\, 1.7$ & $72.6 \,\pm\, 2.8$ & $75.7 \,\pm\, 1.4$ & $\mathbf{76.9} \,\pm\, 0.7$ & $71.2 \,\pm\, 2.3$ & $71.9 \,\pm\, 2.8$ \\
+\hline
+\multirow{3}{*}{VessMAP} & 0 & $\mathbf{76.6} \,\pm\, 0.0$ & $63.8 \,\pm\, 0.0$ & $10.3 \,\pm\, 0.0$ & $36.6 \,\pm\, 0.0$ & $0.0 \,\pm\, 0.0$ & --- & --- \\
+ & 1 & $\mathbf{59.7} \,\pm\, 12.4$ & $58.4 \,\pm\, 11.4$ & $48.6 \,\pm\, 8.2$ & $53.4 \,\pm\, 8.7$ & $58.1 \,\pm\, 11.7$ & $49.1 \,\pm\, 6.0$ & $48.0 \,\pm\, 6.5$ \\
+ & 20 & $85.7 \,\pm\, 1.5$ & $84.3 \,\pm\, 1.4$ & $82.2 \,\pm\, 2.9$ & $84.2 \,\pm\, 1.4$ & $\mathbf{89.5} \,\pm\, 0.6$ & $83.0 \,\pm\, 2.4$ & $72.6 \,\pm\, 4.4$ \\
+\hline
+\end{tabular}
     \endgroup
 \end{table*}
 
@@ -366,9 +364,23 @@ The performance curves in Figure \ref{f:results_charts} reveal behavioral differ
 
 \begin{figure*}[tbp]
     \centering
-    \includegraphics[width=\textwidth]{figures/results/results_charts.pdf}
-    \caption{Few-shot and zero-shot Dice performance on (a) DRIVE and (b) VessMAP. Curves show the mean Dice over $R{=}5$ runs and $S{=}3$ repetitions for each sample size $n$. The shaded areas represent the standard deviation among runs. The inset shows the zero-shot Dice ($n{=}0$) for VSUNet50 on DRIVE, which was much lower than on the other experimental conditions.}
+    \includegraphics[width=\textwidth]{figures/dice_few_shot_analysis_line_chart.pdf}
+    \caption{Few-shot Dice performance as a function of the number of annotated training samples $n$ for (a) VessMAP, (b) DRIVE, (c) OCTA2D and (d) DCA1. Each curve is the mean Dice over $R{=}5$ runs and $S{=}3$ repetitions; shaded areas denote the standard deviation across runs. Seven models are compared: the VessShape-pretrained VSUNet18/50, the ImageNet-pretrained IN-UNet18/50, the fine-tuned LiteMedSAM-FT, and the from-scratch UNet18/50 (dotted). The pre-trained VSUNet variants rise faster and dominate the low-sample regime, while all models tend to converge as $n$ grows.}
     \label{f:results_charts}
+\end{figure*}
+
+\begin{figure*}[tbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/dice_zero_one_shot_analysis_bar_chart.pdf}
+    \caption{Per-dataset Dice in the extreme low-data regimes. (a) Zero-shot Dice ($n{=}0$) for the five variants that admit direct inference: the VessShape-pretrained VSUNet18/50, the ImageNet-pretrained IN-UNet18/50, and LiteMedSAM. Only the VSUNet variants transfer, whereas ImageNet- and MedSAM-initialized models collapse to near-zero Dice. (b) One-shot Dice ($n{=}1$) for all seven models; error bars show the standard deviation across runs. A single labeled example already lets every model produce meaningful segmentations, with the VSUNet variants generally on top.}
+    \label{f:bar_zero_one}
+\end{figure*}
+
+\begin{figure*}[tbp]
+    \centering
+    \includegraphics[width=\textwidth]{figures/dice_significance_analysis.pdf}
+    \caption{Statistical-significance analysis of the Dice advantage of the VessShape-pretrained models over the baselines, using a one-sided paired Wilcoxon signed-rank test on per-image scores ($\alpha{=}0.05$, alternative ``greater''). (a) reference model VSUNet18; (b) reference model VSUNet50. Within each panel, the left grid is the zero-shot regime and the right grid the one-shot regime. Rows are datasets (DCA1, DRIVE, OCTA2D, VessMAP) and columns are the compared baselines (IN-UNet18, IN-UNet50, LiteMedSAM-FT). A dark cell indicates that the VSUNet reference is significantly better than that baseline on that dataset; a light cell indicates no significant difference.}
+    \label{f:significance}
 \end{figure*}
 
 A counterintuitive phenomenon occurs in Figure \ref{f:results_charts}(b) for VessMAP, where the performance of the VSUNet models decreases when moving from zero-shot to one-shot, before recovering and surpassing the zero-shot performance with more samples. This behavior may be due to catastrophic forgetting \cite{MCCLOSKEY1989109}, where fine-tuning on a small dataset can lead the model to forget part of the previously acquired knowledge. However, as more data are introduced, the model can recover and even improve its performance, suggesting that the initially learned shape bias is robust and can be reinforced with additional data.
@@ -392,9 +404,6 @@ Despite being smaller and trained with significantly less data than VSUNet50, th
 
 One of the most significant results is the generalization capability of the models, demonstrated by their zero-shot performance. The models can segment the vessels in visually dissimilar domains without any specific training. In VessMAP, the vessels have high intensity on a dark background, whereas in DRIVE, the vessels are dark on a light background. The VSUNet18 model can successfully segment a large number of vessels in both domains without fine-tuning. This generalization ability suggests that the model has learned a robust representation of vessel shapes, which is applicable regardless of the specific visual characteristics of the domain.
 
-
-
-
 \section{Conclusion}
 \label{s:conclusion}
 
@@ -407,7 +416,6 @@ While our current work focused on generic priors, the VessShape framework is fle
 There are many avenues for future work. The current geometry generation in VessShape, based on Bézier curves, could be extended to include more complex and biologically plausible vascular topologies, such as true bifurcations and network-like structures. Furthermore, extending the VessShape generation framework to 3D would allow this pre-training strategy to be applied to volumetric medical imaging modalities such as CT and MRI. Future studies could also explore the application of a shape-centric pre-training approach to the segmentation of other tubular structures in biology, such as neurons or airways.
 
 Our work underscores an interesting principle: for segmentation tasks with strong and consistent shape priors, focusing on core geometric features can be a more effective and generalizable pre-training strategy than attempting to mimic the appearance of a single target domain.
-
 
 \section*{Ethics statement}
 
@@ -436,5 +444,105 @@ This study was financed, in part, by the São Paulo Research Foundation (FAPESP)
 
 \section{??}
 \label{app:aug}
+
+\begin{table*}[t]
+    \caption{Complete segmentation metrics (\%) for zero-shot, one-shot and full-sample regimes on the four datasets. Values are mean $\pm$ standard deviation over repeated runs; zero-shot rows come from a single inference. Best Dice per (dataset, $N$) group in \textbf{bold}.}
+    \label{tab:full_metrics_appendix}
+    \centering
+    \begingroup
+    \footnotesize
+    \setlength{\tabcolsep}{3pt}
+    \renewcommand{\arraystretch}{1.12}
+\begin{tabular}{l c l r r r r r r}
+\hline
+\textbf{Dataset} & \textbf{N} & \textbf{Model} & \textbf{Dice} & \textbf{Acc} & \textbf{IoU} & \textbf{Prec} & \textbf{Rec} & \textbf{AUC} \\
+\hline
+\multirow{17}{*}{DRIVE} & \multirow{5}{*}{0} & VSUNet18 & $\mathbf{55.3} \,\pm\, 0.0$ & $88.9 \,\pm\, 0.0$ & $38.9 \,\pm\, 0.0$ & $59.4 \,\pm\, 0.0$ & $57.7 \,\pm\, 0.0$ & $85.5 \,\pm\, 0.0$ \\
+ &  & VSUNet50 & $17.5 \,\pm\, 0.0$ & $88.1 \,\pm\, 0.0$ & $10.1 \,\pm\, 0.0$ & $72.1 \,\pm\, 0.0$ & $11.0 \,\pm\, 0.0$ & $71.6 \,\pm\, 0.0$ \\
+ &  & IN-UNet18 & $17.2 \,\pm\, 0.0$ & $52.8 \,\pm\, 0.0$ & $9.4 \,\pm\, 0.0$ & $11.1 \,\pm\, 0.0$ & $38.8 \,\pm\, 0.0$ & $44.6 \,\pm\, 0.0$ \\
+ &  & IN-UNet50 & $22.6 \,\pm\, 0.0$ & $12.7 \,\pm\, 0.0$ & $12.7 \,\pm\, 0.0$ & $12.7 \,\pm\, 0.0$ & $100.0 \,\pm\, 0.0$ & $49.8 \,\pm\, 0.0$ \\
+ &  & LiteMedSAM-FT & $0.0 \,\pm\, 0.0$ & $87.3 \,\pm\, 0.0$ & $0.0 \,\pm\, 0.0$ & $0.0 \,\pm\, 0.0$ & $0.0 \,\pm\, 0.0$ & $51.0 \,\pm\, 0.0$ \\
+\cline{2-9}
+ & \multirow{7}{*}{1} & VSUNet18 & $\mathbf{76.1} \,\pm\, 0.7$ & $94.1 \,\pm\, 0.3$ & $61.5 \,\pm\, 0.9$ & $78.2 \,\pm\, 2.3$ & $74.9 \,\pm\, 1.9$ & $94.8 \,\pm\, 0.5$ \\
+ &  & VSUNet50 & $75.3 \,\pm\, 1.5$ & $93.8 \,\pm\, 0.7$ & $60.5 \,\pm\, 1.9$ & $76.7 \,\pm\, 4.8$ & $75.1 \,\pm\, 4.3$ & $94.8 \,\pm\, 0.5$ \\
+ &  & IN-UNet18 & $72.0 \,\pm\, 3.5$ & $92.5 \,\pm\, 1.9$ & $56.6 \,\pm\, 4.1$ & $72.7 \,\pm\, 8.9$ & $74.9 \,\pm\, 9.3$ & $94.4 \,\pm\, 1.2$ \\
+ &  & IN-UNet50 & $73.5 \,\pm\, 2.7$ & $93.3 \,\pm\, 0.7$ & $58.2 \,\pm\, 3.2$ & $75.1 \,\pm\, 7.2$ & $74.3 \,\pm\, 9.0$ & $95.0 \,\pm\, 0.7$ \\
+ &  & LiteMedSAM-FT & $66.5 \,\pm\, 7.5$ & $92.7 \,\pm\, 0.9$ & $51.0 \,\pm\, 7.6$ & $78.8 \,\pm\, 4.6$ & $60.4 \,\pm\, 10.6$ & $91.3 \,\pm\, 4.4$ \\
+ &  & UNet18 & $65.8 \,\pm\, 9.5$ & $91.0 \,\pm\, 3.4$ & $50.0 \,\pm\, 9.5$ & $71.1 \,\pm\, 10.7$ & $67.2 \,\pm\, 14.8$ & $92.0 \,\pm\, 3.2$ \\
+ &  & UNet50 & $68.4 \,\pm\, 4.6$ & $92.3 \,\pm\, 0.9$ & $52.5 \,\pm\, 4.9$ & $73.3 \,\pm\, 7.4$ & $67.5 \,\pm\, 10.5$ & $91.6 \,\pm\, 2.2$ \\
+\cline{2-9}
+ & \multirow{5}{*}{16} & VSUNet18 & $79.7 \,\pm\, 0.1$ & $95.0 \,\pm\, 0.0$ & $66.3 \,\pm\, 0.1$ & $82.9 \,\pm\, 0.3$ & $77.2 \,\pm\, 0.3$ & $96.7 \,\pm\, 0.0$ \\
+ &  & VSUNet50 & $\mathbf{79.9} \,\pm\, 0.1$ & $95.1 \,\pm\, 0.0$ & $66.6 \,\pm\, 0.1$ & $84.1 \,\pm\, 0.2$ & $76.6 \,\pm\, 0.2$ & $96.9 \,\pm\, 0.0$ \\
+ &  & IN-UNet18 & $79.4 \,\pm\, 0.3$ & $94.9 \,\pm\, 0.1$ & $65.9 \,\pm\, 0.4$ & $81.3 \,\pm\, 0.7$ & $78.1 \,\pm\, 0.6$ & $96.7 \,\pm\, 0.1$ \\
+ &  & IN-UNet50 & $79.2 \,\pm\, 0.1$ & $94.8 \,\pm\, 0.0$ & $65.6 \,\pm\, 0.1$ & $80.4 \,\pm\, 0.4$ & $78.6 \,\pm\, 0.5$ & $96.5 \,\pm\, 0.0$ \\
+ &  & LiteMedSAM-FT & $78.4 \,\pm\, 0.2$ & $94.9 \,\pm\, 0.0$ & $64.5 \,\pm\, 0.3$ & $85.0 \,\pm\, 0.4$ & $73.3 \,\pm\, 0.5$ & $96.9 \,\pm\, 0.1$ \\
+\hline
+\multirow{19}{*}{OCTA2D} & \multirow{5}{*}{0} & VSUNet18 & $27.2 \,\pm\, 0.0$ & $90.7 \,\pm\, 0.0$ & $17.9 \,\pm\, 0.0$ & $70.4 \,\pm\, 0.0$ & $35.1 \,\pm\, 0.0$ & $78.2 \,\pm\, 0.0$ \\
+ &  & VSUNet50 & $\mathbf{47.0} \,\pm\, 0.0$ & $92.3 \,\pm\, 0.0$ & $31.9 \,\pm\, 0.0$ & $71.4 \,\pm\, 0.0$ & $45.1 \,\pm\, 0.0$ & $84.6 \,\pm\, 0.0$ \\
+ &  & IN-UNet18 & $13.8 \,\pm\, 0.0$ & $86.3 \,\pm\, 0.0$ & $7.5 \,\pm\, 0.0$ & $15.3 \,\pm\, 0.0$ & $14.2 \,\pm\, 0.0$ & $58.7 \,\pm\, 0.0$ \\
+ &  & IN-UNet50 & $15.1 \,\pm\, 0.0$ & $9.1 \,\pm\, 0.0$ & $8.2 \,\pm\, 0.0$ & $8.2 \,\pm\, 0.0$ & $98.9 \,\pm\, 0.0$ & $44.8 \,\pm\, 0.0$ \\
+ &  & LiteMedSAM-FT & $0.0 \,\pm\, 0.0$ & $91.8 \,\pm\, 0.0$ & $0.0 \,\pm\, 0.0$ & $0.0 \,\pm\, 0.0$ & $0.0 \,\pm\, 0.0$ & $61.3 \,\pm\, 0.0$ \\
+\cline{2-9}
+ & \multirow{7}{*}{1} & VSUNet18 & $80.4 \,\pm\, 2.1$ & $96.8 \,\pm\, 0.5$ & $67.8 \,\pm\, 2.6$ & $84.3 \,\pm\, 7.4$ & $80.0 \,\pm\, 8.0$ & $98.1 \,\pm\, 0.9$ \\
+ &  & VSUNet50 & $\mathbf{80.5} \,\pm\, 2.1$ & $97.0 \,\pm\, 0.2$ & $67.8 \,\pm\, 2.8$ & $86.0 \,\pm\, 5.8$ & $77.6 \,\pm\, 7.3$ & $97.9 \,\pm\, 1.2$ \\
+ &  & IN-UNet18 & $80.0 \,\pm\, 2.2$ & $96.9 \,\pm\, 0.3$ & $67.2 \,\pm\, 2.9$ & $85.3 \,\pm\, 6.9$ & $77.9 \,\pm\, 7.8$ & $97.7 \,\pm\, 1.1$ \\
+ &  & IN-UNet50 & $80.2 \,\pm\, 3.0$ & $96.9 \,\pm\, 0.3$ & $67.5 \,\pm\, 3.7$ & $85.4 \,\pm\, 6.4$ & $78.1 \,\pm\, 8.8$ & $97.7 \,\pm\, 1.6$ \\
+ &  & LiteMedSAM-FT & $78.7 \,\pm\, 4.1$ & $96.8 \,\pm\, 0.3$ & $65.6 \,\pm\, 4.9$ & $85.8 \,\pm\, 6.0$ & $75.6 \,\pm\, 10.1$ & $97.7 \,\pm\, 1.3$ \\
+ &  & UNet18 & $78.0 \,\pm\, 4.2$ & $96.7 \,\pm\, 0.4$ & $64.8 \,\pm\, 4.9$ & $85.1 \,\pm\, 6.6$ & $75.1 \,\pm\, 10.1$ & $96.4 \,\pm\, 2.8$ \\
+ &  & UNet50 & $79.6 \,\pm\, 2.6$ & $96.9 \,\pm\, 0.2$ & $66.7 \,\pm\, 3.3$ & $85.7 \,\pm\, 5.8$ & $76.8 \,\pm\, 8.4$ & $97.0 \,\pm\, 2.1$ \\
+\cline{2-9}
+ & \multirow{7}{*}{20} & VSUNet18 & $\mathbf{87.1} \,\pm\, 0.3$ & $97.9 \,\pm\, 0.1$ & $77.3 \,\pm\, 0.5$ & $89.6 \,\pm\, 0.9$ & $85.0 \,\pm\, 0.7$ & $99.3 \,\pm\, 0.0$ \\
+ &  & VSUNet50 & $85.7 \,\pm\, 0.2$ & $97.7 \,\pm\, 0.0$ & $75.1 \,\pm\, 0.3$ & $88.0 \,\pm\, 0.7$ & $83.7 \,\pm\, 1.0$ & $99.2 \,\pm\, 0.0$ \\
+ &  & IN-UNet18 & $86.5 \,\pm\, 0.2$ & $97.8 \,\pm\, 0.1$ & $76.4 \,\pm\, 0.4$ & $88.6 \,\pm\, 1.0$ & $84.7 \,\pm\, 0.6$ & $99.3 \,\pm\, 0.0$ \\
+ &  & IN-UNet50 & $85.9 \,\pm\, 0.2$ & $97.7 \,\pm\, 0.0$ & $75.4 \,\pm\, 0.2$ & $88.3 \,\pm\, 0.8$ & $83.8 \,\pm\, 0.8$ & $99.1 \,\pm\, 0.0$ \\
+ &  & LiteMedSAM-FT & $86.2 \,\pm\, 0.4$ & $97.8 \,\pm\, 0.1$ & $75.8 \,\pm\, 0.6$ & $90.1 \,\pm\, 0.5$ & $82.8 \,\pm\, 0.9$ & $99.1 \,\pm\, 0.1$ \\
+ &  & UNet18 & $87.0 \,\pm\, 0.6$ & $97.9 \,\pm\, 0.1$ & $77.1 \,\pm\, 0.9$ & $89.0 \,\pm\, 1.1$ & $85.3 \,\pm\, 0.8$ & $99.3 \,\pm\, 0.1$ \\
+ &  & UNet50 & $86.4 \,\pm\, 0.3$ & $97.8 \,\pm\, 0.1$ & $76.2 \,\pm\, 0.4$ & $88.7 \,\pm\, 0.9$ & $84.4 \,\pm\, 0.7$ & $99.2 \,\pm\, 0.0$ \\
+\hline
+\multirow{17}{*}{DCA1} & \multirow{5}{*}{0} & VSUNet18 & $\mathbf{53.6} \,\pm\, 0.0$ & $91.3 \,\pm\, 0.0$ & $37.5 \,\pm\, 0.0$ & $40.1 \,\pm\, 0.0$ & $91.7 \,\pm\, 0.0$ & $97.1 \,\pm\, 0.0$ \\
+ &  & VSUNet50 & $48.0 \,\pm\, 0.0$ & $92.9 \,\pm\, 0.0$ & $33.2 \,\pm\, 0.0$ & $42.7 \,\pm\, 0.0$ & $70.7 \,\pm\, 0.0$ & $92.6 \,\pm\, 0.0$ \\
+ &  & IN-UNet18 & $5.5 \,\pm\, 0.0$ & $79.6 \,\pm\, 0.0$ & $2.9 \,\pm\, 0.0$ & $3.7 \,\pm\, 0.0$ & $13.1 \,\pm\, 0.0$ & $40.5 \,\pm\, 0.0$ \\
+ &  & IN-UNet50 & $9.2 \,\pm\, 0.0$ & $6.2 \,\pm\, 0.0$ & $4.8 \,\pm\, 0.0$ & $4.8 \,\pm\, 0.0$ & $99.8 \,\pm\, 0.0$ & $54.6 \,\pm\, 0.0$ \\
+ &  & LiteMedSAM-FT & $0.9 \,\pm\, 0.0$ & $95.2 \,\pm\, 0.0$ & $0.5 \,\pm\, 0.0$ & $17.0 \,\pm\, 0.0$ & $0.5 \,\pm\, 0.0$ & $69.6 \,\pm\, 0.0$ \\
+\cline{2-9}
+ & \multirow{5}{*}{1} & VSUNet18 & $\mathbf{54.7} \,\pm\, 7.9$ & $96.7 \,\pm\, 0.5$ & $40.4 \,\pm\, 7.3$ & $75.2 \,\pm\, 7.7$ & $49.0 \,\pm\, 12.7$ & $92.5 \,\pm\, 4.3$ \\
+ &  & VSUNet50 & $46.8 \,\pm\, 12.3$ & $96.5 \,\pm\, 0.3$ & $33.2 \,\pm\, 10.5$ & $77.6 \,\pm\, 8.1$ & $39.6 \,\pm\, 16.1$ & $89.3 \,\pm\, 5.1$ \\
+ &  & IN-UNet18 & $30.5 \,\pm\, 16.1$ & $95.1 \,\pm\, 2.3$ & $20.3 \,\pm\, 12.5$ & $64.1 \,\pm\, 20.2$ & $27.2 \,\pm\, 17.3$ & $78.1 \,\pm\, 13.0$ \\
+ &  & IN-UNet50 & $45.6 \,\pm\, 12.3$ & $96.3 \,\pm\, 0.4$ & $31.9 \,\pm\, 10.5$ & $75.5 \,\pm\, 10.4$ & $39.0 \,\pm\, 16.6$ & $85.4 \,\pm\, 6.0$ \\
+ &  & LiteMedSAM-FT & $50.9 \,\pm\, 12.1$ & $95.1 \,\pm\, 4.0$ & $36.5 \,\pm\, 10.8$ & $69.4 \,\pm\, 21.1$ & $48.8 \,\pm\, 12.7$ & $91.9 \,\pm\, 5.1$ \\
+\cline{2-9}
+ & \multirow{7}{*}{20} & VSUNet18 & $76.7 \,\pm\, 1.3$ & $97.8 \,\pm\, 0.1$ & $62.6 \,\pm\, 1.6$ & $79.0 \,\pm\, 1.4$ & $76.0 \,\pm\, 2.9$ & $99.0 \,\pm\, 0.1$ \\
+ &  & VSUNet50 & $75.6 \,\pm\, 1.7$ & $97.7 \,\pm\, 0.1$ & $61.3 \,\pm\, 1.9$ & $78.1 \,\pm\, 1.4$ & $75.1 \,\pm\, 3.4$ & $98.6 \,\pm\, 0.2$ \\
+ &  & IN-UNet18 & $72.6 \,\pm\, 2.8$ & $97.5 \,\pm\, 0.1$ & $57.9 \,\pm\, 2.8$ & $77.2 \,\pm\, 2.4$ & $71.7 \,\pm\, 4.8$ & $98.4 \,\pm\, 0.3$ \\
+ &  & IN-UNet50 & $75.7 \,\pm\, 1.4$ & $97.8 \,\pm\, 0.1$ & $61.3 \,\pm\, 1.7$ & $78.5 \,\pm\, 1.2$ & $74.6 \,\pm\, 3.0$ & $97.9 \,\pm\, 0.4$ \\
+ &  & LiteMedSAM-FT & $\mathbf{76.9} \,\pm\, 0.7$ & $97.8 \,\pm\, 0.0$ & $62.8 \,\pm\, 0.9$ & $77.3 \,\pm\, 1.1$ & $78.1 \,\pm\, 1.7$ & $98.7 \,\pm\, 0.2$ \\
+ &  & UNet18 & $71.2 \,\pm\, 2.3$ & $97.4 \,\pm\, 0.2$ & $56.2 \,\pm\, 2.1$ & $75.7 \,\pm\, 3.7$ & $70.8 \,\pm\, 5.2$ & $98.2 \,\pm\, 0.3$ \\
+ &  & UNet50 & $71.9 \,\pm\, 2.8$ & $97.5 \,\pm\, 0.1$ & $57.2 \,\pm\, 2.7$ & $76.8 \,\pm\, 2.3$ & $71.0 \,\pm\, 5.0$ & $97.9 \,\pm\, 0.6$ \\
+\hline
+\multirow{19}{*}{VessMAP} & \multirow{5}{*}{0} & VSUNet18 & $\mathbf{76.6} \,\pm\, 0.0$ & $90.7 \,\pm\, 0.0$ & $62.9 \,\pm\, 0.0$ & $86.1 \,\pm\, 0.0$ & $70.8 \,\pm\, 0.0$ & $94.8 \,\pm\, 0.0$ \\
+ &  & VSUNet50 & $63.8 \,\pm\, 0.0$ & $84.9 \,\pm\, 0.0$ & $49.7 \,\pm\, 0.0$ & $73.5 \,\pm\, 0.0$ & $61.8 \,\pm\, 0.0$ & $88.3 \,\pm\, 0.0$ \\
+ &  & IN-UNet18 & $10.3 \,\pm\, 0.0$ & $72.7 \,\pm\, 0.0$ & $5.5 \,\pm\, 0.0$ & $23.1 \,\pm\, 0.0$ & $7.8 \,\pm\, 0.0$ & $46.3 \,\pm\, 0.0$ \\
+ &  & IN-UNet50 & $36.6 \,\pm\, 0.0$ & $23.8 \,\pm\, 0.0$ & $22.9 \,\pm\, 0.0$ & $23.0 \,\pm\, 0.0$ & $98.7 \,\pm\, 0.0$ & $56.3 \,\pm\, 0.0$ \\
+ &  & LiteMedSAM-FT & $0.0 \,\pm\, 0.0$ & $77.1 \,\pm\, 0.0$ & $0.0 \,\pm\, 0.0$ & $0.0 \,\pm\, 0.0$ & $0.0 \,\pm\, 0.0$ & $59.5 \,\pm\, 0.0$ \\
+\cline{2-9}
+ & \multirow{7}{*}{1} & VSUNet18 & $\mathbf{59.7} \,\pm\, 12.4$ & $69.5 \,\pm\, 24.6$ & $46.6 \,\pm\, 12.8$ & $61.7 \,\pm\, 22.5$ & $78.5 \,\pm\, 12.8$ & $85.9 \,\pm\, 12.6$ \\
+ &  & VSUNet50 & $58.4 \,\pm\, 11.4$ & $69.2 \,\pm\, 24.3$ & $45.4 \,\pm\, 11.8$ & $63.2 \,\pm\, 22.8$ & $76.1 \,\pm\, 14.8$ & $85.1 \,\pm\, 11.1$ \\
+ &  & IN-UNet18 & $48.6 \,\pm\, 8.2$ & $65.1 \,\pm\, 15.5$ & $35.8 \,\pm\, 7.9$ & $58.6 \,\pm\, 18.7$ & $66.1 \,\pm\, 18.0$ & $78.1 \,\pm\, 8.7$ \\
+ &  & IN-UNet50 & $53.4 \,\pm\, 8.7$ & $66.7 \,\pm\, 22.4$ & $40.3 \,\pm\, 9.0$ & $62.7 \,\pm\, 22.5$ & $71.2 \,\pm\, 16.9$ & $84.1 \,\pm\, 3.9$ \\
+ &  & LiteMedSAM-FT & $58.1 \,\pm\, 11.7$ & $75.5 \,\pm\, 21.3$ & $45.9 \,\pm\, 12.6$ & $69.1 \,\pm\, 21.4$ & $67.2 \,\pm\, 16.8$ & $83.3 \,\pm\, 13.2$ \\
+ &  & UNet18 & $49.1 \,\pm\, 6.0$ & $63.3 \,\pm\, 19.9$ & $36.2 \,\pm\, 6.3$ & $59.2 \,\pm\, 19.1$ & $70.2 \,\pm\, 16.6$ & $80.4 \,\pm\, 9.6$ \\
+ &  & UNet50 & $48.0 \,\pm\, 6.5$ & $59.4 \,\pm\, 21.6$ & $34.8 \,\pm\, 6.8$ & $55.4 \,\pm\, 20.2$ & $72.8 \,\pm\, 17.6$ & $78.2 \,\pm\, 7.8$ \\
+\cline{2-9}
+ & \multirow{7}{*}{20} & VSUNet18 & $85.7 \,\pm\, 1.5$ & $93.0 \,\pm\, 1.2$ & $76.2 \,\pm\, 2.0$ & $86.1 \,\pm\, 4.1$ & $87.3 \,\pm\, 5.2$ & $97.3 \,\pm\, 0.3$ \\
+ &  & VSUNet50 & $84.3 \,\pm\, 1.4$ & $92.8 \,\pm\, 1.2$ & $74.0 \,\pm\, 1.8$ & $87.6 \,\pm\, 2.7$ & $83.3 \,\pm\, 2.8$ & $96.9 \,\pm\, 0.6$ \\
+ &  & IN-UNet18 & $82.2 \,\pm\, 2.9$ & $92.3 \,\pm\, 1.0$ & $71.3 \,\pm\, 3.7$ & $86.3 \,\pm\, 3.0$ & $81.1 \,\pm\, 6.1$ & $96.5 \,\pm\, 0.5$ \\
+ &  & IN-UNet50 & $84.2 \,\pm\, 1.4$ & $93.2 \,\pm\, 0.9$ & $74.1 \,\pm\, 1.7$ & $88.4 \,\pm\, 3.2$ & $82.1 \,\pm\, 3.9$ & $96.9 \,\pm\, 0.3$ \\
+ &  & LiteMedSAM-FT & $\mathbf{89.5} \,\pm\, 0.6$ & $95.3 \,\pm\, 0.3$ & $81.8 \,\pm\, 0.8$ & $88.5 \,\pm\, 1.9$ & $91.8 \,\pm\, 1.4$ & $98.6 \,\pm\, 0.2$ \\
+ &  & UNet18 & $83.0 \,\pm\, 2.4$ & $91.6 \,\pm\, 1.1$ & $72.0 \,\pm\, 2.9$ & $81.3 \,\pm\, 2.7$ & $87.0 \,\pm\, 6.0$ & $97.0 \,\pm\, 0.5$ \\
+ &  & UNet50 & $72.6 \,\pm\, 4.4$ & $87.9 \,\pm\, 2.0$ & $59.5 \,\pm\, 5.1$ & $84.3 \,\pm\, 3.9$ & $70.1 \,\pm\, 6.9$ & $92.6 \,\pm\, 1.7$ \\
+\hline
+\end{tabular}
+    \endgroup
+\end{table*}
 
 \end{document}
