@@ -418,4 +418,23 @@ This study was financed, in part, by the São Paulo Research Foundation (FAPESP)
 
 \bibliography{references}
 
+\appendix
+\section*{Appendices} % Optional header
+
+% Redefine section numbering to use letters (A, B, C)
+\renewcommand{\thesection}{\Alph{section}}
+
+% Redefine Figure numbering (e.g., Fig. A1)
+\renewcommand{\thefigure}{\thesection\arabic{figure}}
+\renewcommand{\theHfigure}{\thesection.\arabic{figure}}
+\setcounter{figure}{0} % Reset figure counter
+
+% Redefine Table numbering (e.g., Table A1)
+\renewcommand{\thetable}{\thesection\arabic{table}}
+\renewcommand{\theHtable}{\thesection.\arabic{table}}
+\setcounter{table}{0} % Reset table counter
+
+\section{??}
+\label{app:aug}
+
 \end{document}
