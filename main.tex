@@ -376,12 +376,12 @@ The performance curves in Figure \ref{f:results_charts} reveal behavioral differ
     \label{f:bar_zero_one}
 \end{figure*}
 
-\begin{figure*}[tbp]
+\begin{figure}[tbp]
     \centering
-    \includegraphics[width=\textwidth]{figures/dice_significance_analysis.pdf}
+    \includegraphics[width=\columnwidth]{figures/dice_significance_analysis.pdf}
     \caption{Statistical-significance analysis of the Dice advantage of the VessShape-pretrained models over the baselines, using a one-sided paired Wilcoxon signed-rank test on per-image scores ($\alpha{=}0.05$, alternative ``greater''). (a) reference model VSUNet18; (b) reference model VSUNet50. Within each panel, the left grid is the zero-shot regime and the right grid the one-shot regime. Rows are datasets (DCA1, DRIVE, OCTA2D, VessMAP) and columns are the compared baselines (IN-UNet18, IN-UNet50, LiteMedSAM-FT). A dark cell indicates that the VSUNet reference is significantly better than that baseline on that dataset; a light cell indicates no significant difference.}
     \label{f:significance}
-\end{figure*}
+\end{figure}
 
 A counterintuitive phenomenon occurs in Figure \ref{f:results_charts}(b) for VessMAP, where the performance of the VSUNet models decreases when moving from zero-shot to one-shot, before recovering and surpassing the zero-shot performance with more samples. This behavior may be due to catastrophic forgetting \cite{MCCLOSKEY1989109}, where fine-tuning on a small dataset can lead the model to forget part of the previously acquired knowledge. However, as more data are introduced, the model can recover and even improve its performance, suggesting that the initially learned shape bias is robust and can be reinforced with additional data.
 
